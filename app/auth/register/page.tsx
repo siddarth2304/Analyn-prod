@@ -1,11 +1,10 @@
-// app/auth/register/page.tsx
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from "firebase/auth"
-import { app, googleProvider } from "@/lib/firebase"
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,10 +17,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
-  const auth = getAuth(app)
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!auth) return toast.error("Firebase not loaded yet")
     setError("")
     setLoading(true)
     const fd = new FormData(e.currentTarget)
@@ -34,7 +33,6 @@ export default function RegisterPage() {
         await sendEmailVerification(cred.user, { url: window.location.origin + "/auth/login" })
         toast.success("Account created! Please verify your email before logging in.")
       }
-      // keep user on register page or navigate to login
     } catch (err: any) {
       setError(err.message || "Registration failed")
     } finally {
@@ -43,6 +41,7 @@ export default function RegisterPage() {
   }
 
   const handleGoogle = async () => {
+    if (!auth) return toast.error("Firebase not loaded yet")
     setLoading(true)
     setError("")
     try {
