@@ -39,7 +39,7 @@ export async function getUserProfileByEmail(email: string) {
   return result.length > 0 ? mapUser(result[0]) : null
 }
 
-// Example: update booking status (you can extend as needed)
+// Update booking status
 export async function updateBookingStatus(bookingId: string, status: string) {
   const result = await sql`
     UPDATE bookings
@@ -50,6 +50,10 @@ export async function updateBookingStatus(bookingId: string, status: string) {
   return result[0]
 }
 
-// Expose database client if needed
+// Expose database client
 export const getDatabase = () => sql
+
+// === ALIASES TO SATISFY VERCEL BUILD ===
+export const getUserByEmail = getUserProfileByEmail
+export const createUser = createUserProfile
 
