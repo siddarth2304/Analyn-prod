@@ -13,7 +13,7 @@ const allServices = [
     id: 1,
     name: "Swedish Therapeutic",
     description: "Deep massage using signature balm and Swedish movements to release tight muscle groups",
-    price: 7000, // Price in INR
+    price: 999, // Price in INR
     duration: 60,
     image: "/relaxing-swedish-massage.png",
     benefits: ["Stress Relief", "Chronic Pain", "Hard Massage"],
@@ -22,7 +22,7 @@ const allServices = [
     id: 2,
     name: "Shiatsu",
     description: "A manipulative therapy developed in Japan incorporating techniques of anma, acupressure, stretching, and Western massage",
-    price: 7800, // Price in INR
+    price: 1299, // Price in INR
     duration: 60,
     image: "/deep-tissue-massage.png",
     benefits: ["Chronic Pain", "Joint Problems", "Headaches"],
@@ -31,7 +31,7 @@ const allServices = [
     id: 3,
     name: "Swedish Aromatherapy",
     description: "Medium pressure massage using long gliding strokes with organic essential oil aromatherapy",
-    price: 6800, // Price in INR
+    price: 1599, // Price in INR
     duration: 60,
     image: "/aromatherapy-massage-oils.png",
     benefits: ["Stress Relief", "Improve Mood", "Relaxation"],
@@ -40,7 +40,7 @@ const allServices = [
     id: 4,
     name: "Office Syndrome Therapy",
     description: "An intense therapeutic session to treat repetitive postural stress using multiple advanced massage modalities",
-    price: 8500, // Price in INR
+    price: 2999, // Price in INR
     duration: 60,
     image: "/wellness-massage-therapy.png",
     benefits: ["Carpal Tunnel", "Migraine", "Posture"],
@@ -49,7 +49,7 @@ const allServices = [
     id: 5,
     name: "Hot Stone Massage",
     description: "Uses smooth, heated stones to warm and relax muscles, allowing for deeper pressure.",
-    price: 7500, // Price in INR
+    price: 1699, // Price in INR
     duration: 75,
     image: "/deep-tissue-massage.png", // Use a relevant placeholder
     benefits: ["Muscle Tension", "Blood Circulation", "Deep Relaxation"],
@@ -58,7 +58,7 @@ const allServices = [
     id: 6,
     name: "Sports Massage",
     description: "Focuses on preventing and treating injuries to muscles and tendons, ideal for athletes.",
-    price: 8000, // Price in INR
+    price: 4999, // Price in INR
     duration: 60,
     image: "/wellness-massage-therapy.png", // Use a relevant placeholder
     benefits: ["Injury Prevention", "Flexibility", "Performance"],
