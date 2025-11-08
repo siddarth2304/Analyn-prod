@@ -1,11 +1,13 @@
+// File: app/api/admin/therapists/pending/route.ts
+
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// This helper function replaces the broken middleware
-async function verifyAdmin(request: NextRequest) {
+// Helper function no longer takes 'request'
+async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
@@ -16,7 +18,7 @@ async function verifyAdmin(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdmin(request); // Verify user is an admin
+    await verifyAdmin(); // Verify user is an admin
     const result = await sql`
       SELECT t.id, t.user_id, t.is_verified, t.experience_years, t.hourly_rate, t.location, t.created_at,
              u.first_name, u.last_name, u.email, u.phone, t.specialties
