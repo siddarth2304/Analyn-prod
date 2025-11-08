@@ -1,4 +1,5 @@
 // lib/database.ts
+
 import { sql } from "@vercel/postgres"
 
 // Helper to map database row to user object
@@ -16,7 +17,7 @@ function mapUser(row: any) {
   }
 }
 
-// Create a new user profile
+// Create a new user profile (Unchanged)
 export async function createUserProfile(userData: {
   email: string
   firstName: string
@@ -30,16 +31,26 @@ export async function createUserProfile(userData: {
     VALUES (${userData.email}, ${userData.firstName}, ${userData.lastName}, ${userData.phone || null}, ${userData.role}, ${userData.firebaseUid}, NOW(), NOW())
     RETURNING *
   `
-  return mapUser(result[0])
+  // Use .rows[0] for @vercel/postgres
+  return mapUser(result.rows[0])
 }
 
-// Get a user by email
+// --- THIS FUNCTION IS UPDATED ---
+// Get a user by email (CASE-INSENSITIVE)
 export async function getUserProfileByEmail(email: string) {
-  const result = await sql`SELECT * FROM users WHERE email = ${email}`
-  return result.length > 0 ? mapUser(result[0]) : null
+  // Add a safety check
+  if (!email) return null;
+
+  // Use LOWER() to make the search case-insensitive
+  const result = await sql`
+    SELECT * FROM users WHERE LOWER(email) = LOWER(${email})
+  `
+  
+  // Use .rowCount and .rows[0] for @vercel/postgres
+  return result.rowCount > 0 ? mapUser(result.rows[0]) : null
 }
 
-// Update booking status
+// Update booking status (Unchanged)
 export async function updateBookingStatus(bookingId: string, status: string) {
   const result = await sql`
     UPDATE bookings
@@ -47,7 +58,8 @@ export async function updateBookingStatus(bookingId: string, status: string) {
     WHERE id = ${bookingId}
     RETURNING *
   `
-  return result[0]
+  // Use .rows[0]
+  return result.rows[0]
 }
 
 // Expose database client
@@ -56,4 +68,3 @@ export const getDatabase = () => sql
 // === ALIASES TO SATISFY VERCEL BUILD ===
 export const getUserByEmail = getUserProfileByEmail
 export const createUser = createUserProfile
-

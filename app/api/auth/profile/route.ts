@@ -11,19 +11,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    // Get the Firebase token from the request
     const idToken = authHeader.split(" ")[1];
     
     // Verify the Firebase token
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const email = decodedToken.email;
 
+    // --- DEBUGGING LOG ---
+    console.log("Firebase token email:", email);
+    // ---------------------
+
     if (!email) {
       return NextResponse.json({ error: "Email not found in token" }, { status: 400 });
     }
 
-    // Get the user's profile from your NeonDB
+    // Call our updated case-insensitive function
     const userProfile = await getUserProfileByEmail(email);
+
+    // --- DEBUGGING LOG ---
+    console.log("NeonDB profile found:", userProfile);
+    // ---------------------
+
     if (!userProfile) {
       return NextResponse.json({ error: "User profile not found in database" }, { status: 404 });
     }
@@ -31,8 +39,9 @@ export async function GET(request: Request) {
     // Send back the full database profile (including the role)
     return NextResponse.json(userProfile);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Profile fetch error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    // Send back a more specific error message
+    return NextResponse.json({ error: "Internal server error", detail: error.message }, { status: 500 });
   }
 }
