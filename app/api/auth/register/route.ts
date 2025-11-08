@@ -1,49 +1,44 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { createUser, getUserByEmail } from "@/lib/database";
+// File: app/api/auth/register/route.ts
 
-export async function POST(request: NextRequest) {
+import { NextResponse } from "next/server";
+import { createUserProfile, getUserProfileByEmail } from "@/lib/database"; // Use your existing functions
+
+export async function POST(request: Request) {
   try {
-    const { email, password, firstName, lastName, phone, role = "client" } = await request.json();
+    const { email, firstName, lastName, phone, firebaseUid, role } = await request.json();
 
-    if (!email || !password || !firstName || !lastName) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!email || !firebaseUid || !role) {
+      return NextResponse.json(
+        { error: "Missing required fields: email, firebaseUid, and role" },
+        { status: 400 }
+      );
     }
 
-    const existing = await getUserByEmail(email);
-    if (existing) {
-      return NextResponse.json({ error: "User already exists" }, { status: 409 });
+    // Check if user already exists in our DB
+    const existingUser = await getUserProfileByEmail(email);
+    if (existingUser) {
+      // This is fine, just return the existing user
+      return NextResponse.json(existingUser, { status: 200 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await createUser({
+    // Create the new user profile in NeonDB
+    const newUser = await createUserProfile({
       email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      phone,
-      role,
+      firstName: firstName || "New", // Add default fallbacks
+      lastName: lastName || "User",
+      phone: phone || null,
+      role: role === "therapist" ? "therapist" : "client",
+      firebaseUid,
     });
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
-
-    const response = NextResponse.json({ message: "Registration successful", user }, { status: 201 });
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    return response;
-  } catch (error) {
-    console.error("Registration error:", error);
+    return NextResponse.json(newUser, { status: 201 });
+    
+  } catch (error: any) {
+    console.error("API Register Error:", error);
+    // Handle potential database errors
+    if (error.code === '23505') { // Postgres unique violation
+      return NextResponse.json({ error: "User profile already exists." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
