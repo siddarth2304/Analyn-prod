@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server"
 
 // This interface must match your DB 'users' table
 export interface User {
-  id: number // Changed from string to number
+  id: number
   email: string
   firstName: string
   lastName: string
@@ -22,9 +22,8 @@ export function createToken(user: User): string {
     role: user.role,
   }
   
-  // This now relies 100% on your environment variable
   return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: "1d", // Token lasts for 1 day
+    expiresIn: "1d",
   })
 }
 
@@ -33,7 +32,7 @@ export function verifyToken(token: string): User | null {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
     return {
-      id: decoded.userId, // This will be a number from the token
+      id: decoded.userId,
       email: decoded.email,
       firstName: decoded.firstName,
       lastName: decoded.lastName,

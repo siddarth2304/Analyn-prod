@@ -1,3 +1,5 @@
+// File: app/book/page.tsx
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -25,6 +27,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from "@/components/auth-provider" // <-- 1. IMPORT AUTH
 
 type Service = {
   id: string | number
@@ -50,10 +53,8 @@ type Therapist = {
   location?: string
 }
 
-// Updated Platform Fee for INR
 const PLATFORM_FEE = 150
 
-// Updated currency function for INR
 function inr(n: number) {
   return `₹${(Math.round(n * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`
 }
@@ -69,6 +70,17 @@ function evaluateCouponClient(code: string, total: number) {
 export default function BookingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  
+  // --- 2. PROTECT THE PAGE ---
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && !user) {
+      // User is not logged in, redirect them
+      router.push("/auth/login?redirect=/book");
+    }
+  }, [authLoading, user, router]);
+  // --- END PROTECTION ---
+
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [services, setServices] = useState<Service[]>([])
@@ -112,7 +124,7 @@ export default function BookingPage() {
               name: "Swedish Therapeutic",
               description: "Deep massage...",
               duration: 60,
-              price: 1399, // Updated price
+              price: 1399,
               category: "massage",
             },
             {
@@ -120,20 +132,20 @@ export default function BookingPage() {
               name: "Shiatsu",
               description: "Japanese therapy...",
               duration: 60,
-              price: 1299, // Updated price
+              price: 1299,
               category: "massage",
             },
             {
               id: 3,
-              name: "Swedish Aromatherapy", // Updated name
+              name: "Swedish Aromatherapy", 
               description: "Long gliding strokes",
               duration: 60,
-              price: 999, // Updated price
+              price: 999,
               category: "massage",
             },
             {
               id: 4,
-              name: "Office Syndrome Therapy", // Added
+              name: "Office Syndrome Therapy", 
               description: "Intense session for postural stress",
               duration: 60,
               price: 2999,
@@ -141,7 +153,7 @@ export default function BookingPage() {
             },
             {
               id: 5,
-              name: "Deep Tissue Massage", // Added
+              name: "Deep Tissue Massage", 
               description: "Targets deep muscle layers",
               duration: 90,
               price: 1599,
@@ -149,7 +161,7 @@ export default function BookingPage() {
             },
             {
               id: 6,
-              name: "Hot Stone Massage", // Added
+              name: "Hot Stone Massage", 
               description: "Heated stones for relaxation",
               duration: 75,
               price: 1499,
@@ -158,13 +170,13 @@ export default function BookingPage() {
           ] as any)
         }
 
-        // --- HARDCODE FIX ---
-        // We are forcing the 'else' block to run
-        if (false) {
+        // --- REMOVED HARDCODE FIX ---
+        // This will now fetch real, approved therapists
+        if (tRes.status === "fulfilled" && tRes.value.ok) {
           const data = await tRes.value.json()
           setTherapists((data?.therapists || data || []) as Therapist[])
         } else {
-          // --- UPDATED HARDCODED THERAPIST LIST ---
+          // Hardcoded list as a fallback in case API fails
           setTherapists([
             {
               id: 1,
@@ -188,36 +200,17 @@ export default function BookingPage() {
               distance: 3.1,
               location: "BGC",
             },
-            {
-              id: 3,
-              first_name: "Carlos",
-              last_name: "Mendoza",
-              profile_image: "/male-therapist.png",
-              rating: 4.7,
-              total_reviews: 156,
-              specialties: ["Sports Massage", "Office Syndrome"],
-              distance: 4.2,
-              location: "Ortigas",
-            },
-            {
-              id: 4,
-              first_name: "Isabella",
-              last_name: "Cruz",
-              profile_image: "/professional-female-therapist.png",
-              rating: 4.9,
-              total_reviews: 203,
-              specialties: ["Aromatherapy", "Reflexology"],
-              distance: 1.8,
-              location: "Quezon City",
-            },
           ] as any)
         }
       } catch {
         /* ignore */
       }
     }
-    load()
-  }, [])
+    // Only load data if the user is logged in
+    if (!authLoading && user) {
+      load()
+    }
+  }, [authLoading, user]) // Re-run when auth is ready
 
   // Preselect via query params
   useEffect(() => {
@@ -331,7 +324,7 @@ export default function BookingPage() {
         clientLatitude: null,
         clientLongitude: null,
         notes: clientInfo.notes,
-        currency: "inr", // Updated currency
+        currency: "inr",
         couponCode: couponApplied ? couponCode : undefined,
         clientEmail: clientInfo.email,
         clientFirstName: clientInfo.firstName,
@@ -358,7 +351,6 @@ export default function BookingPage() {
       })
 
       if (!res.ok) {
-        // Robust error handling: support JSON and text responses
         let errMsg = "Payment/Booking failed"
         try {
           const ct = res.headers.get("content-type") || ""
@@ -397,8 +389,18 @@ export default function BookingPage() {
     }
   }
 
+  // --- 3. SHOW LOADING OR REDIRECT ---
+  // If auth is loading, or if user is not logged in, show a loading screen
+  if (authLoading || !user) {
+    return (
+       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 flex items-center justify-center">
+         <p className="text-stone-700">Loading booking page...</p>
+       </div>
+    );
+  }
+  
+  // --- 4. USER IS LOGGED IN, SHOW THE PAGE ---
   return (
-    // Updated background gradient
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50">
       <div className="container mx-auto px-4 py-8">
         {/* Steps */}
@@ -409,8 +411,8 @@ export default function BookingPage() {
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                     step <= currentStep
-                      ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white" // Updated color
-                      : "bg-stone-200 text-stone-600" // Updated color
+                      ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white"
+                      : "bg-stone-200 text-stone-600"
                   }`}
                 >
                   {step < currentStep ? <CheckCircle className="w-5 h-5" /> : step}
@@ -418,7 +420,7 @@ export default function BookingPage() {
                 {step < 4 && (
                   <div
                     className={`w-24 h-1 mx-4 ${
-                      step < currentStep ? "bg-gradient-to-r from-teal-600 to-emerald-600" : "bg-stone-200" // Updated color
+                      step < currentStep ? "bg-gradient-to-r from-teal-600 to-emerald-600" : "bg-stone-200"
                     }`}
                   />
                 )}
@@ -426,8 +428,6 @@ export default function BookingPage() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-sm text-stone-600">
-            {" "}
-            {/* Updated color */}
             <span>Select Service</span>
             <span>Choose Therapist</span>
             <span>Date & Time</span>
@@ -459,7 +459,7 @@ export default function BookingPage() {
                         type="button"
                         className={`w-full text-left p-4 border rounded-lg cursor-pointer transition-all ${
                           selected
-                            ? "border-teal-500 bg-teal-50" // Updated color
+                            ? "border-teal-500 bg-teal-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedService(service)}
@@ -469,12 +469,9 @@ export default function BookingPage() {
                             <h3 className="font-semibold text-lg">{service.name}</h3>
                             {service.description && (
                               <p className="text-stone-600 text-sm mt-1">{service.description}</p>
-                            )}{" "}
-                            {/* Updated color */}
+                            )}
                             <div className="flex items-center space-x-4 mt-3">
                               <div className="flex items-center text-sm text-stone-600">
-                                {" "}
-                                {/* Updated color */}
                                 <Clock className="w-4 h-4 mr-1" />
                                 {duration} minutes
                               </div>
@@ -486,8 +483,7 @@ export default function BookingPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-teal-700">{inr(price)}</div>{" "}
-                            {/* Updated color & currency */}
+                            <div className="text-2xl font-bold text-teal-700">{inr(price)}</div>
                           </div>
                         </div>
                       </button>
@@ -529,7 +525,7 @@ export default function BookingPage() {
                         type="button"
                         className={`w-full text-left p-4 border rounded-lg cursor-pointer transition-all ${
                           selected
-                            ? "border-teal-500 bg-teal-50" // Updated color
+                            ? "border-teal-500 bg-teal-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedTherapist(t)}
@@ -551,13 +547,10 @@ export default function BookingPage() {
                               <div className="flex items-center">
                                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
                                 <span className="font-medium ml-1">{rating.toFixed(1)}</span>
-                                <span className="text-stone-500 text-sm ml-1">({reviews})</span>{" "}
-                                {/* Updated color */}
+                                <span className="text-stone-500 text-sm ml-1">({reviews})</span>
                               </div>
                               {typeof t.distance === "number" && (
                                 <div className="flex items-center text-sm text-stone-600">
-                                  {" "}
-                                  {/* Updated color */}
                                   <MapPin className="w-3 h-3 mr-1" />
                                   {t.distance}km away
                                 </div>
@@ -675,7 +668,7 @@ export default function BookingPage() {
                           id="phone"
                           value={clientInfo.phone}
                           onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
-                          placeholder="+91 912 345 6789" // Updated placeholder
+                          placeholder="+91 912 345 6789"
                         />
                       </div>
                     </div>
@@ -734,8 +727,6 @@ export default function BookingPage() {
                     </div>
                     {couponMessage && (
                       <p className={`mt-2 text-sm ${couponApplied ? "text-teal-700" : "text-red-600"}`}>
-                        {" "}
-                        {/* Updated color */}
                         {couponMessage}
                       </p>
                     )}
@@ -748,7 +739,7 @@ export default function BookingPage() {
                         type="button"
                         className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${
                           paymentMethod === "card"
-                            ? "border-teal-500 bg-teal-50" // Updated color
+                            ? "border-teal-500 bg-teal-50"
                             : "border-gray-200"
                         }`}
                         onClick={() => setPaymentMethod("card")}
@@ -762,7 +753,7 @@ export default function BookingPage() {
                         type="button"
                         className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${
                           paymentMethod === "wallet"
-                            ? "border-teal-500 bg-teal-50" // Updated color
+                            ? "border-teal-500 bg-teal-50"
                             : "border-gray-200"
                         }`}
                         onClick={() => setPaymentMethod("wallet")}
@@ -824,13 +815,10 @@ export default function BookingPage() {
                   )}
 
                   <div className="flex items-center space-x-2 p-4 bg-teal-50 rounded-lg">
-                    {" "}
-                    {/* Updated color */}
-                    <Shield className="w-5 h-5 text-teal-700" /> {/* Updated color */}
+                    <Shield className="w-5 h-5 text-teal-700" />
                     <span className="text-sm text-teal-800">
                       Your payment information is encrypted and secure
-                    </span>{" "}
-                    {/* Updated color */}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -856,7 +844,6 @@ export default function BookingPage() {
                     (currentStep === 2 && !selectedTherapist) ||
                     (currentStep === 3 && !canProceedToPay)
                   }
-                  // Themed Next button
                   className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
                 >
                   Next
@@ -872,7 +859,6 @@ export default function BookingPage() {
                       paymentMethod === "card" &&
                       (!cardNumber || !cardExpiry || !cardCvc || !cardName))
                   }
-                  // Themed Pay button
                   className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
                 >
                   {loading
@@ -894,28 +880,22 @@ export default function BookingPage() {
               <CardContent className="space-y-4">
                 {selectedService && (
                   <div className="p-4 bg-stone-50 rounded-lg">
-                    {" "}
-                    {/* Updated color */}
                     <h4 className="font-medium">{selectedService.name}</h4>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm text-stone-600">
-                        {" "}
-                        {/* Updated color */}
                         {(selectedService.duration ?? selectedService.duration_minutes ?? 60) as number} minutes
                       </span>
-                      <span className="font-semibold">{inr(servicePrice)}</span> {/* Updated currency */}
+                      <span className="font-semibold">{inr(servicePrice)}</span>
                     </div>
                   </div>
                 )}
 
                 {selectedTherapist && (
                   <div className="p-4 bg-stone-50 rounded-lg">
-                    {" "}
-                    {/* Updated color */}
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
                         <AvatarImage
-                          src={selectedTherapist.profile_image || selectedTherapist.avatar || "/placeholder.svg"}
+                          src={selectedTherapist.profile_image || selectedTepist.avatar || "/placeholder.svg"}
                           alt={
                             selectedTherapist.name ||
                             `${selectedTherapist.first_name || ""} ${selectedTherapist.last_name || ""}`.trim()
@@ -939,8 +919,6 @@ export default function BookingPage() {
                             `${selectedTherapist.first_name || ""} ${selectedTherapist.last_name || ""}`.trim()}
                         </h4>
                         <div className="flex items-center text-sm text-stone-600">
-                          {" "}
-                          {/* Updated color */}
                           <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
                           {(selectedTherapist.rating ?? 4.8).toFixed(1)} ({selectedTherapist.total_reviews ?? 0})
                         </div>
@@ -951,12 +929,8 @@ export default function BookingPage() {
 
                 {selectedDate && selectedTime && (
                   <div className="p-4 bg-stone-50 rounded-lg">
-                    {" "}
-                    {/* Updated color */}
                     <h4 className="font-medium mb-2">Date & Time</h4>
                     <div className="text-sm text-stone-600">
-                      {" "}
-                      {/* Updated color */}
                       <div>
                         {selectedDate.toLocaleDateString("en-US", {
                           weekday: "long",
@@ -974,33 +948,26 @@ export default function BookingPage() {
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between">
                       <span>Service Fee</span>
-                      <span>{inr(servicePrice)}</span> {/* Updated currency */}
+                      <span>{inr(servicePrice)}</span>
                     </div>
                     <div className="flex justify-between text-sm text-stone-600">
-                      {" "}
-                      {/* Updated color */}
                       <span>Platform Fee</span>
-                      <span>{inr(PLATFORM_FEE)}</span> {/* Updated currency */}
+                      <span>{inr(PLATFORM_FEE)}</span>
                     </div>
                     {couponApplied && (
                       <div className="flex justify-between text-sm text-teal-700">
-                        {" "}
-                        {/* Updated color */}
                         <span>Coupon Discount ({couponCode.trim().toLowerCase() || "code"})</span>
-                        <span>-{inr(discount)}</span> {/* Updated currency */}
+                        <span>-{inr(discount)}</span>
                       </div>
-              )}
+                    )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total</span>
-                      <span className="text-teal-700">{inr(finalAmount)}</span>{" "}
-                      {/* Updated currency & color */}
+                      <span className="text-teal-700">{inr(finalAmount)}</span>
                     </div>
                   </div>
                 )}
 
                 <div className="text-xs text-stone-500 space-y-1">
-                  {" "}
-                  {/* Updated color */}
                   <p>• Free cancellation up to 24 hours before</p>
                   <p>• All therapists are verified and insured</p>
                   <p>• 100% satisfaction guarantee</p>

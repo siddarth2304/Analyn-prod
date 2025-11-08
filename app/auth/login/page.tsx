@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // 1. Import useSearchParams
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,9 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, EyeOff, ArrowLeft, Leaf } from "lucide-react"; // Import Leaf
+import { Eye, EyeOff, ArrowLeft, Leaf } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { auth, googleProvider } from "@/lib/firebase"; // This import is now safe
+import { auth, googleProvider } from "@/lib/firebase";
 import {
   isSignInWithEmailLink,
   signInWithEmailLink,
@@ -31,7 +31,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { login } = useAuth(); // Assuming useAuth is correctly configured
+  const { login } = useAuth();
+  
+  // 2. Get the redirect parameter from the URL
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/book"; // Default to /book
 
   // This effect handles the magic link sign-in
   useEffect(() => {
@@ -39,28 +43,15 @@ export default function LoginPage() {
       typeof window !== "undefined" &&
       isSignInWithEmailLink(auth, window.location.href)
     ) {
-      const storedEmail = window.localStorage.getItem("emailForSignIn");
-      const emailPrompt =
-        storedEmail || window.prompt("Please provide your email for confirmation");
-      
-      if (!emailPrompt) {
-        toast.error("Email not found for sign-in link.");
-        return;
-      }
-
-      setLoading(true);
+      // ... (rest of this function is fine)
       signInWithEmailLink(auth, emailPrompt, window.location.href)
         .then(() => {
-          window.localStorage.removeItem("emailForSignIn");
-          toast.success("Signed in!");
-          router.push("/book");
+          // ...
+          router.push(redirectUrl); // 3. Use the redirectUrl
         })
-        .catch((err) => {
-          setError(err.message || "Magic link sign-in failed");
-        })
-        .finally(() => setLoading(false));
+      // ...
     }
-  }, [router]);
+  }, [router, redirectUrl]); // 4. Add redirectUrl to dependency array
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -71,10 +62,9 @@ export default function LoginPage() {
     const password = fd.get("password") as string;
 
     try {
-      // login via AuthProvider
       await login(email, password);
       toast.success("Welcome back!");
-      router.push("/book");
+      router.push(redirectUrl); // 5. Use the redirectUrl
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
@@ -88,7 +78,7 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, googleProvider);
       toast.success("Signed in with Google");
-      router.push("/book"); // Redirect to booking or dashboard
+      router.push(redirectUrl); // 6. Use the redirectUrl
     } catch (err: any) {
       setError(err.message || "Google sign-in failed");
     } finally {
