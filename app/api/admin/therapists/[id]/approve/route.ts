@@ -1,24 +1,36 @@
-import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+// File: app/api/admin/therapists/[id]/approve/route.ts
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  const sql = neon(process.env.DATABASE_URL!)
+import { NextResponse, type NextRequest } from "next/server"
+import { sql } from "@vercel/postgres"
+import { requireAuth } from "@/lib/auth"
+
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // 1. Check if user is an admin
+    requireAuth(request, ["admin"]);
+
     const id = Number(params.id)
-    if (!id) return NextResponse.json({ error: "Invalid id" }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 })
+    }
 
-    // Auth
-    const auth = _req.headers.get("authorization")
-    if (!auth?.startsWith("Bearer ")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    const token = auth.split(" ")[1]
-    const jwt = await import("jsonwebtoken")
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "dev-secret") as any
-    if (decoded?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    // 2. Approve the therapist
+    const result = await sql`
+      UPDATE therapists 
+      SET is_verified = true 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
 
-    const result = await sql`UPDATE therapists SET is_verified = true WHERE id = ${id} RETURNING *`
-    if (!result.length) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json({ therapist: result[0] }, { status: 200 })
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Therapist not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ therapist: result.rows[0] }, { status: 200 })
   } catch (e: any) {
+    if (e.message === "Authentication required" || e.message === "Insufficient permissions") {
+      return NextResponse.json({ error: e.message }, { status: 403 });
+    }
     return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 })
   }
 }

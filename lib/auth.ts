@@ -47,3 +47,18 @@ export function requireAuth(request: NextRequest, allowedRoles?: string[]) {
 
   return user
 }
+// Add this to lib/auth.ts
+
+export function createToken(user: User): string {
+  const payload = {
+    userId: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+  }
+  
+  return jwt.sign(payload, process.env.JWT_SECRET || "your-secret-key-change-in-production", {
+    expiresIn: "1d", // Token lasts for 1 day
+  })
+}
