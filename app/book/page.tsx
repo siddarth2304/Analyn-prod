@@ -51,7 +51,7 @@ type Therapist = {
 }
 
 // Updated Platform Fee for INR
-const PLATFORM_FEE = 149
+const PLATFORM_FEE = 150
 
 // Updated currency function for INR
 function inr(n: number) {
@@ -61,7 +61,7 @@ function inr(n: number) {
 function evaluateCouponClient(code: string, total: number) {
   const normalized = code.trim().toLowerCase()
   if (!normalized) return { valid: false, free: false, discount: 0, message: "" }
-  if (normalized === "siddu100")
+  if (normalized === "flash100")
     return { valid: true, free: true, discount: total, message: "Flash sale applied: 100% off" }
   return { valid: false, free: false, discount: 0, message: "Invalid coupon code" }
 }
@@ -112,7 +112,7 @@ export default function BookingPage() {
               name: "Swedish Therapeutic",
               description: "Deep massage...",
               duration: 60,
-              price: 999, // Updated price
+              price: 1399, // Updated price
               category: "massage",
             },
             {
@@ -125,72 +125,93 @@ export default function BookingPage() {
             },
             {
               id: 3,
-              name: "Aromatherapy",
+              name: "Swedish Aromatherapy", // Updated name
               description: "Long gliding strokes",
               duration: 60,
-              price: 1999, // Updated price
+              price: 999, // Updated price
+              category: "massage",
+            },
+            {
+              id: 4,
+              name: "Office Syndrome Therapy", // Added
+              description: "Intense session for postural stress",
+              duration: 60,
+              price: 2999,
+              category: "massage",
+            },
+            {
+              id: 5,
+              name: "Deep Tissue Massage", // Added
+              description: "Targets deep muscle layers",
+              duration: 90,
+              price: 1599,
+              category: "massage",
+            },
+            {
+              id: 6,
+              name: "Hot Stone Massage", // Added
+              description: "Heated stones for relaxation",
+              duration: 75,
+              price: 1499,
               category: "massage",
             },
           ] as any)
         }
 
-        if (tRes.status === "fulfilled" && tRes.value.ok) {
+        // --- HARDCODE FIX ---
+        // We are forcing the 'else' block to run
+        if (false) {
           const data = await tRes.value.json()
           setTherapists((data?.therapists || data || []) as Therapist[])
-      // ... inside the useEffect hook ...
-      } else {
-        setServices([
-          {
-            id: 1,
-            name: "Swedish Therapeutic",
-            description: "Deep massage...",
-            duration: 60,
-            price: 1399, // Updated price
-            category: "massage",
-          },
-          {
-            id: 2,
-            name: "Shiatsu",
-            description: "Japanese therapy...",
-            duration: 60,
-            price: 1299, // Updated price
-            category: "massage",
-          },
-          {
-            id: 3,
-            name: "Swedish Aromatherapy", // Updated name
-            description: "Long gliding strokes",
-            duration: 60,
-            price: 999, // Updated price
-            category: "massage",
-          },
-          {
-            id: 4,
-            name: "Office Syndrome Therapy", // Added
-            description: "Intense session for postural stress",
-            duration: 60,
-            price: 2999,
-            category: "massage",
-          },
-          {
-            id: 5,
-            name: "Deep Tissue Massage", // Added
-            description: "Targets deep muscle layers",
-            duration: 90,
-            price: 1599,
-            category: "massage",
-          },
-          {
-            id: 6,
-            name: "Hot Stone Massage", // Added
-            description: "Heated stones for relaxation",
-            duration: 75,
-            price: 1499,
-            category: "massage",
-          },
-        ] as any)
-      }
-// ...
+        } else {
+          // --- UPDATED HARDCODED THERAPIST LIST ---
+          setTherapists([
+            {
+              id: 1,
+              first_name: "Maria",
+              last_name: "Santos",
+              profile_image: "/professional-female-therapist.png",
+              rating: 4.9,
+              total_reviews: 127,
+              specialties: ["Swedish", "Deep Tissue"],
+              distance: 2.3,
+              location: "Makati",
+            },
+            {
+              id: 2,
+              first_name: "Anna",
+              last_name: "Rodriguez",
+              profile_image: "/asian-female-therapist.png",
+              rating: 4.8,
+              total_reviews: 89,
+              specialties: ["Shiatsu", "Prenatal"],
+              distance: 3.1,
+              location: "BGC",
+            },
+            {
+              id: 3,
+              first_name: "Carlos",
+              last_name: "Mendoza",
+              profile_image: "/male-therapist.png",
+              rating: 4.7,
+              total_reviews: 156,
+              specialties: ["Sports Massage", "Office Syndrome"],
+              distance: 4.2,
+              location: "Ortigas",
+            },
+            {
+              id: 4,
+              first_name: "Isabella",
+              last_name: "Cruz",
+              profile_image: "/professional-female-therapist.png",
+              rating: 4.9,
+              total_reviews: 203,
+              specialties: ["Aromatherapy", "Reflexology"],
+              distance: 1.8,
+              location: "Quezon City",
+            },
+          ] as any)
+        }
       } catch {
         /* ignore */
       }
@@ -968,7 +989,7 @@ export default function BookingPage() {
                         <span>Coupon Discount ({couponCode.trim().toLowerCase() || "code"})</span>
                         <span>-{inr(discount)}</span> {/* Updated currency */}
                       </div>
-                    )}
+              )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total</span>
                       <span className="text-teal-700">{inr(finalAmount)}</span>{" "}
