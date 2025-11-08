@@ -1,12 +1,12 @@
 // File: app/api/admin/therapists/[id]/reject/route.ts
 
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server"; // <-- DO NOT import NextRequest
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper function no longer takes 'request'
+// Helper function to verify admin
 async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
@@ -16,7 +16,8 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// The 'request: NextRequest' argument is now removed, fixing the build error
+// --- THIS IS THE FIX ---
+// The argument must be 'request: Request'
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     await verifyAdmin(); // Verify user is an admin
