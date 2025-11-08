@@ -19,7 +19,7 @@ interface Therapist {
   reviewCount: number
   specialties: string[]
   experience: number
-  hourlyRate: number
+  hourlyRate: number // Now in INR
   distance: number
   location: string
   bio: string
@@ -34,11 +34,12 @@ export default function TherapistsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200])
+  // Updated price range for INR
+  const [priceRange, setPriceRange] = useState<[number, number]>([3000, 10000])
   const [sortBy, setSortBy] = useState("rating")
   const [favorites, setFavorites] = useState<string[]>([])
 
-  // Mock data - replace with API call
+  // Mock data - updated with INR rates
   useEffect(() => {
     const mockTherapists: Therapist[] = [
       {
@@ -49,7 +50,7 @@ export default function TherapistsPage() {
         reviewCount: 127,
         specialties: ["Swedish Therapeutic", "Deep Tissue", "Aromatherapy"],
         experience: 5,
-        hourlyRate: 85,
+        hourlyRate: 7000, // Updated to INR
         distance: 2.3,
         location: "Makati, Manila",
         bio: "Certified massage therapist with 5 years of experience specializing in therapeutic massage for stress relief and pain management.",
@@ -65,7 +66,7 @@ export default function TherapistsPage() {
         reviewCount: 89,
         specialties: ["Shiatsu", "Hot Stone", "Prenatal"],
         experience: 7,
-        hourlyRate: 95,
+        hourlyRate: 7800, // Updated to INR
         distance: 3.1,
         location: "BGC, Taguig",
         bio: "Expert in Japanese Shiatsu massage and prenatal care. Helping clients achieve wellness through traditional healing techniques.",
@@ -81,7 +82,7 @@ export default function TherapistsPage() {
         reviewCount: 156,
         specialties: ["Sports Massage", "Deep Tissue", "Office Syndrome"],
         experience: 8,
-        hourlyRate: 100,
+        hourlyRate: 8500, // Updated to INR
         distance: 4.2,
         location: "Ortigas, Pasig",
         bio: "Sports massage specialist working with athletes and office workers. Expert in treating repetitive strain injuries.",
@@ -97,7 +98,7 @@ export default function TherapistsPage() {
         reviewCount: 203,
         specialties: ["Swedish Aromatherapy", "Reflexology", "Reiki"],
         experience: 6,
-        hourlyRate: 80,
+        hourlyRate: 6800, // Updated to INR
         distance: 1.8,
         location: "Quezon City",
         bio: "Holistic wellness practitioner combining massage therapy with energy healing for complete mind-body wellness.",
@@ -113,7 +114,7 @@ export default function TherapistsPage() {
         reviewCount: 74,
         specialties: ["Thai Massage", "Stretching", "Sports Recovery"],
         experience: 4,
-        hourlyRate: 75,
+        hourlyRate: 6400, // Updated to INR
         distance: 5.1,
         location: "Alabang, Muntinlupa",
         bio: "Traditional Thai massage practitioner focused on flexibility and sports recovery for active individuals.",
@@ -130,7 +131,7 @@ export default function TherapistsPage() {
     }, 1000)
   }, [])
 
-  // Filter and sort therapists
+  // Filter and sort therapists (logic unchanged)
   useEffect(() => {
     const filtered = therapists.filter((therapist) => {
       const matchesSearch =
@@ -146,7 +147,6 @@ export default function TherapistsPage() {
       return matchesSearch && matchesSpecialty && matchesPrice
     })
 
-    // Sort therapists
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "rating":
@@ -188,12 +188,13 @@ export default function TherapistsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      // Updated loading screen background
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 flex items-center justify-center">
         <div className="animate-pulse space-y-6 w-full max-w-6xl">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-stone-200 rounded w-1/4"></div>
           <div className="grid md:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+              <div key={i} className="h-64 bg-stone-200 rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -202,14 +203,14 @@ export default function TherapistsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* --- HEADER REMOVED --- */}
+    // Updated main background
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700">
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Find Your Perfect Therapist</h1>
-          <p className="text-gray-600 text-lg">
-            Browse our network of verified wellness professionals in Manila and surrounding areas
+          <h1 className="text-4xl font-bold mb-4 text-stone-800">Find Your Perfect Therapist</h1>
+          <p className="text-stone-600 text-lg">
+            Browse our network of verified wellness professionals
           </p>
         </div>
 
@@ -217,7 +218,7 @@ export default function TherapistsPage() {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
           <div className="grid md:grid-cols-4 gap-4 mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4" />
               <Input
                 placeholder="Search therapists or specialties..."
                 value={searchQuery}
@@ -261,19 +262,28 @@ export default function TherapistsPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Price Range: ₱{priceRange[0]} - ₱{priceRange[1]} per hour
+              {/* Updated currency and range */}
+              Price Range: ₹{priceRange[0]} - ₹{priceRange[1]} per hour
             </label>
-            <Slider value={priceRange} onValueChange={setPriceRange} max={200} min={0} step={5} className="w-full" />
+            {/* Updated slider values */}
+            <Slider
+              value={priceRange}
+              onValueChange={setPriceRange}
+              max={10000}
+              min={3000}
+              step={100}
+              className="w-full"
+            />
           </div>
         </div>
 
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-600">
+          <p className="text-stone-600">
             Showing {filteredTherapists.length} of {therapists.length} therapists
           </p>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">View:</span>
+            <span className="text-sm text-stone-600">View:</span>
             <Button variant="outline" size="sm">
               Grid
             </Button>
@@ -286,7 +296,7 @@ export default function TherapistsPage() {
         {/* Therapists Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {filteredTherapists.map((therapist) => (
-            <Card key={therapist.id} className="hover:shadow-lg transition-all duration-300 group">
+            <Card key={therapist.id} className="hover:shadow-lg transition-all duration-300 group bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
@@ -297,15 +307,15 @@ export default function TherapistsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold text-lg">{therapist.name}</h3>
+                      <h3 className="font-semibold text-lg text-stone-800">{therapist.name}</h3>
                       <div className="flex items-center space-x-1 mb-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
                         <span className="font-medium">{therapist.rating}</span>
-                        <span className="text-gray-500 text-sm">({therapist.reviewCount})</span>
+                        <span className="text-stone-500 text-sm">({therapist.reviewCount})</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <MapPin className="w-3 h-3 text-gray-400" />
-                        <span className="text-sm text-gray-600">
+                        <MapPin className="w-3 h-3 text-stone-400" />
+                        <span className="text-sm text-stone-600">
                           {therapist.distance}km • {therapist.location}
                         </span>
                       </div>
@@ -318,7 +328,7 @@ export default function TherapistsPage() {
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Heart
-                      className={`w-4 h-4 ${favorites.includes(therapist.id) ? "fill-red-500 text-red-500" : "text-gray-400"}`}
+                      className={`w-4 h-4 ${favorites.includes(therapist.id) ? "fill-red-500 text-red-500" : "text-stone-400"}`}
                     />
                   </Button>
                 </div>
@@ -326,7 +336,11 @@ export default function TherapistsPage() {
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-1">
                   {therapist.specialties.slice(0, 3).map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="text-xs">
+                    <Badge
+                      key={specialty}
+                      variant="secondary"
+                      className="text-xs bg-emerald-100 text-emerald-800" // Themed badge
+                    >
                       {specialty}
                     </Badge>
                   ))}
@@ -337,34 +351,38 @@ export default function TherapistsPage() {
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 line-clamp-2">{therapist.bio}</p>
+                <p className="text-sm text-stone-600 line-clamp-2">{therapist.bio}</p>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Experience:</span>
+                    <span className="text-stone-500">Experience:</span>
                     <span className="font-medium ml-1">{therapist.experience} years</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Rate:</span>
-                    <span className="font-medium ml-1">₱{therapist.hourlyRate}/hr</span>
+                    <span className="text-stone-500">Rate:</span>
+                    {/* Updated currency */}
+                    <span className="font-medium ml-1">₹{therapist.hourlyRate}/hr</span>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-green-600 font-medium">{therapist.availability}</span>
+                  <Clock className="w-4 h-4 text-teal-600" />
+                  <span className="text-sm text-teal-700 font-medium">{therapist.availability}</span>
                 </div>
 
-                <p className="text-xs text-gray-500">{therapist.responseTime}</p>
+                <p className="text-xs text-stone-500">{therapist.responseTime}</p>
 
                 <div className="flex space-x-2 pt-2">
                   <Link href={`/therapists/${therapist.id}`} className="flex-1">
-                    <Button variant="outline" className="w-full bg-transparent">
+                    <Button
+                      variant="outline"
+                      className="w-full bg-transparent text-teal-700 border-teal-700 hover:bg-teal-700 hover:text-white" // Themed outline button
+                    >
                       View Profile
                     </Button>
                   </Link>
                   <Link href={`/book?therapist=${therapist.id}`} className="flex-1">
-                    <Button className="w-full">
+                    <Button className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700">
                       <Calendar className="w-4 h-4 mr-2" />
                       Book Now
                     </Button>
@@ -377,17 +395,18 @@ export default function TherapistsPage() {
 
         {filteredTherapists.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-400" />
+            <div className="w-24 h-24 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-stone-400" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No therapists found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your filters or search terms</p>
+            <h3 className="text-xl font-semibold mb-2 text-stone-800">No therapists found</h3>
+            <p className="text-stone-600 mb-4">Try adjusting your filters or search terms</p>
             <Button
               onClick={() => {
                 setSearchQuery("")
                 setSelectedSpecialty("all")
-                setPriceRange([0, 200])
+                setPriceRange([3000, 10000]) // Reset to INR default
               }}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
             >
               Clear Filters
             </Button>
@@ -396,20 +415,29 @@ export default function TherapistsPage() {
 
         {filteredTherapists.length > 0 && (
           <div className="text-center">
-            <Button variant="outline" size="lg">
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-transparent text-teal-700 border-teal-700 hover:bg-teal-700 hover:text-white"
+            >
               Load More Therapists
             </Button>
           </div>
         )}
       </div>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      {/* CTA Section - Themed to match homepage */}
+      <section className="py-16">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Are You a Wellness Professional?</h2>
-          <p className="text-xl mb-8 opacity-90">Join our platform and connect with clients who need your expertise</p>
+          <h2 className="text-3xl font-bold mb-4 text-stone-800">Are You a Wellness Professional?</h2>
+          <p className="text-xl mb-8 text-stone-600">
+            Join our platform and connect with clients who need your expertise
+          </p>
           <Link href="/therapists/apply">
-            <Button size="lg" variant="secondary">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
+            >
               Apply as Therapist
             </Button>
           </Link>
@@ -418,4 +446,3 @@ export default function TherapistsPage() {
     </div>
   )
 }
-

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
-import { User } from "lucide-react"
+import { User, Leaf, Home } from "lucide-react" // 1. Import Home icon
 
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -22,14 +22,14 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center font-sans shadow-md">
-      
-      {/* Logo */}
+    // Changed background to white with a shadow for a clean, "spa-like" feel
+    <nav className="bg-white text-stone-700 px-6 py-4 flex justify-between items-center font-sans shadow-md">
+      {/* Logo - updated to match footer logo and page.tsx theme */}
       <Link href="/" className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center">
-          <span className="text-white font-extrabold text-lg">A</span>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 flex items-center justify-center">
+          <Leaf className="w-6 h-6 text-white" />
         </div>
-        <span className="text-2xl font-extrabold tracking-wide bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
+        <span className="text-2xl font-extrabold tracking-wide bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
           ANALYN
         </span>
       </Link>
@@ -37,38 +37,55 @@ export default function Navbar() {
       {/* Nav Links + Profile */}
       <div className="flex items-center gap-6">
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/book" className="hover:underline hover:opacity-90 transition font-medium">
+          {/* 2. Add Home Icon Link Here */}
+          <Link
+            href="/"
+            className="text-stone-600 hover:text-teal-600 transition"
+            aria-label="Home"
+          >
+            <Home className="w-5 h-5" />
+          </Link>
+          <Link
+            href="/book"
+            className="text-stone-600 hover:text-teal-600 transition font-medium"
+          >
             Bookings
           </Link>
-          <Link href="/therapists" className="hover:underline hover:opacity-90 transition font-medium">
+          <Link
+            href="/therapists"
+            className="text-stone-600 hover:text-teal-600 transition font-medium"
+          >
             Therapists
           </Link>
-          <Link href="/services" className="hover:underline hover:opacity-90 transition font-medium">
+          <Link
+            href="/services"
+            className="text-stone-600 hover:text-teal-600 transition font-medium"
+          >
             Services
           </Link>
         </div>
 
-        {/* Profile Dropdown */}
+        {/* Profile Dropdown - updated to match theme */}
         <div className="relative ml-4">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-600 hover:ring-2 hover:ring-white transition"
+            className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-teal-600 hover:bg-stone-200 transition"
           >
             <User className="w-5 h-5" />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg py-2 z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white text-stone-700 rounded-md shadow-lg py-2 z-50">
               <Link
                 href="/profile"
-                className="block px-4 py-2 text-left hover:bg-blue-100 hover:text-blue-600 transition"
+                className="block px-4 py-2 text-left hover:bg-teal-50 hover:text-teal-700 transition"
                 onClick={() => setDropdownOpen(false)}
               >
                 Profile
               </Link>
               <button
                 onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 hover:bg-blue-100 hover:text-blue-600 transition"
+                className="block w-full text-left px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition"
               >
                 Logout
               </button>
@@ -79,4 +96,3 @@ export default function Navbar() {
     </nav>
   )
 }
-

@@ -50,11 +50,14 @@ type Therapist = {
   location?: string
 }
 
-const PLATFORM_FEE = 75
+// Updated Platform Fee for INR
+const PLATFORM_FEE = 150
 
-function peso(n: number) {
-  return `₱${(Math.round(n * 100) / 100).toLocaleString("en-PH", { minimumFractionDigits: 0 })}`
+// Updated currency function for INR
+function inr(n: number) {
+  return `₹${(Math.round(n * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 0 })}`
 }
+
 function evaluateCouponClient(code: string, total: number) {
   const normalized = code.trim().toLowerCase()
   if (!normalized) return { valid: false, free: false, discount: 0, message: "" }
@@ -109,7 +112,7 @@ export default function BookingPage() {
               name: "Swedish Therapeutic",
               description: "Deep massage...",
               duration: 60,
-              price: 750,
+              price: 7000, // Updated price
               category: "massage",
             },
             {
@@ -117,7 +120,7 @@ export default function BookingPage() {
               name: "Shiatsu",
               description: "Japanese therapy...",
               duration: 60,
-              price: 850,
+              price: 7800, // Updated price
               category: "massage",
             },
             {
@@ -125,7 +128,7 @@ export default function BookingPage() {
               name: "Aromatherapy",
               description: "Long gliding strokes",
               duration: 60,
-              price: 675,
+              price: 6800, // Updated price
               category: "massage",
             },
           ] as any)
@@ -279,7 +282,7 @@ export default function BookingPage() {
         clientLatitude: null,
         clientLongitude: null,
         notes: clientInfo.notes,
-        currency: "php",
+        currency: "inr", // Updated currency
         couponCode: couponApplied ? couponCode : undefined,
         clientEmail: clientInfo.email,
         clientFirstName: clientInfo.firstName,
@@ -346,7 +349,8 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-rose-50">
+    // Updated background gradient
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50">
       <div className="container mx-auto px-4 py-8">
         {/* Steps */}
         <div className="max-w-4xl mx-auto mb-8">
@@ -356,8 +360,8 @@ export default function BookingPage() {
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                     step <= currentStep
-                      ? "bg-gradient-to-r from-purple-600 to-rose-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white" // Updated color
+                      : "bg-stone-200 text-stone-600" // Updated color
                   }`}
                 >
                   {step < currentStep ? <CheckCircle className="w-5 h-5" /> : step}
@@ -365,14 +369,16 @@ export default function BookingPage() {
                 {step < 4 && (
                   <div
                     className={`w-24 h-1 mx-4 ${
-                      step < currentStep ? "bg-gradient-to-r from-purple-600 to-rose-600" : "bg-gray-200"
+                      step < currentStep ? "bg-gradient-to-r from-teal-600 to-emerald-600" : "bg-stone-200" // Updated color
                     }`}
                   />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-sm text-gray-600">
+          <div className="flex justify-between mt-2 text-sm text-stone-600">
+            {" "}
+            {/* Updated color */}
             <span>Select Service</span>
             <span>Choose Therapist</span>
             <span>Date & Time</span>
@@ -403,24 +409,36 @@ export default function BookingPage() {
                         key={service.id}
                         type="button"
                         className={`w-full text-left p-4 border rounded-lg cursor-pointer transition-all ${
-                          selected ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-gray-300"
+                          selected
+                            ? "border-teal-500 bg-teal-50" // Updated color
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedService(service)}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{service.name}</h3>
-                            {service.description && <p className="text-gray-600 text-sm mt-1">{service.description}</p>}
+                            {service.description && (
+                              <p className="text-stone-600 text-sm mt-1">{service.description}</p>
+                            )}{" "}
+                            {/* Updated color */}
                             <div className="flex items-center space-x-4 mt-3">
-                              <div className="flex items-center text-sm text-gray-600">
+                              <div className="flex items-center text-sm text-stone-600">
+                                {" "}
+                                {/* Updated color */}
                                 <Clock className="w-4 h-4 mr-1" />
                                 {duration} minutes
                               </div>
-                              {service.category && <Badge variant="secondary">{service.category}</Badge>}
+                              {service.category && (
+                                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+                                  {service.category}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600">{peso(price)}</div>
+                            <div className="text-2xl font-bold text-teal-700">{inr(price)}</div>{" "}
+                            {/* Updated color & currency */}
                           </div>
                         </div>
                       </button>
@@ -461,7 +479,9 @@ export default function BookingPage() {
                         key={t.id}
                         type="button"
                         className={`w-full text-left p-4 border rounded-lg cursor-pointer transition-all ${
-                          selected ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-gray-300"
+                          selected
+                            ? "border-teal-500 bg-teal-50" // Updated color
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                         onClick={() => setSelectedTherapist(t)}
                       >
@@ -482,10 +502,13 @@ export default function BookingPage() {
                               <div className="flex items-center">
                                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
                                 <span className="font-medium ml-1">{rating.toFixed(1)}</span>
-                                <span className="text-gray-500 text-sm ml-1">({reviews})</span>
+                                <span className="text-stone-500 text-sm ml-1">({reviews})</span>{" "}
+                                {/* Updated color */}
                               </div>
                               {typeof t.distance === "number" && (
-                                <div className="flex items-center text-sm text-gray-600">
+                                <div className="flex items-center text-sm text-stone-600">
+                                  {" "}
+                                  {/* Updated color */}
                                   <MapPin className="w-3 h-3 mr-1" />
                                   {t.distance}km away
                                 </div>
@@ -539,7 +562,11 @@ export default function BookingPage() {
                               variant={selectedTime === time ? "default" : "outline"}
                               size="sm"
                               onClick={() => setSelectedTime(time)}
-                              className="text-sm"
+                              className={`text-sm ${
+                                selectedTime === time
+                                  ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
+                                  : "bg-transparent text-teal-700 border-teal-700 hover:bg-teal-700 hover:text-white"
+                              }`}
                             >
                               {time}
                             </Button>
@@ -599,7 +626,7 @@ export default function BookingPage() {
                           id="phone"
                           value={clientInfo.phone}
                           onChange={(e) => setClientInfo({ ...clientInfo, phone: e.target.value })}
-                          placeholder="+63 912 345 6789"
+                          placeholder="+91 912 345 6789" // Updated placeholder
                         />
                       </div>
                     </div>
@@ -657,7 +684,9 @@ export default function BookingPage() {
                       </Button>
                     </div>
                     {couponMessage && (
-                      <p className={`mt-2 text-sm ${couponApplied ? "text-green-600" : "text-red-600"}`}>
+                      <p className={`mt-2 text-sm ${couponApplied ? "text-teal-700" : "text-red-600"}`}>
+                        {" "}
+                        {/* Updated color */}
                         {couponMessage}
                       </p>
                     )}
@@ -668,7 +697,11 @@ export default function BookingPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
-                        className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${paymentMethod === "card" ? "border-purple-500 bg-purple-50" : "border-gray-200"}`}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${
+                          paymentMethod === "card"
+                            ? "border-teal-500 bg-teal-50" // Updated color
+                            : "border-gray-200"
+                        }`}
                         onClick={() => setPaymentMethod("card")}
                       >
                         <div className="flex items-center space-x-3">
@@ -678,7 +711,11 @@ export default function BookingPage() {
                       </button>
                       <button
                         type="button"
-                        className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${paymentMethod === "wallet" ? "border-purple-500 bg-purple-50" : "border-gray-200"}`}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all text-left ${
+                          paymentMethod === "wallet"
+                            ? "border-teal-500 bg-teal-50" // Updated color
+                            : "border-gray-200"
+                        }`}
                         onClick={() => setPaymentMethod("wallet")}
                         disabled
                         title="Coming soon"
@@ -737,9 +774,14 @@ export default function BookingPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-2 p-4 bg-green-50 rounded-lg">
-                    <Shield className="w-5 h-5 text-green-600" />
-                    <span className="text-sm text-green-700">Your payment information is encrypted and secure</span>
+                  <div className="flex items-center space-x-2 p-4 bg-teal-50 rounded-lg">
+                    {" "}
+                    {/* Updated color */}
+                    <Shield className="w-5 h-5 text-teal-700" /> {/* Updated color */}
+                    <span className="text-sm text-teal-800">
+                      Your payment information is encrypted and secure
+                    </span>{" "}
+                    {/* Updated color */}
                   </div>
                 </CardContent>
               </Card>
@@ -765,6 +807,8 @@ export default function BookingPage() {
                     (currentStep === 2 && !selectedTherapist) ||
                     (currentStep === 3 && !canProceedToPay)
                   }
+                  // Themed Next button
+                  className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -779,9 +823,14 @@ export default function BookingPage() {
                       paymentMethod === "card" &&
                       (!cardNumber || !cardExpiry || !cardCvc || !cardName))
                   }
-                  className="bg-gradient-to-r from-purple-600 to-rose-600"
+                  // Themed Pay button
+                  className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
                 >
-                  {loading ? "Processing..." : finalAmount === 0 ? "Book for Free" : `Pay ${peso(finalAmount)}`}
+                  {loading
+                    ? "Processing..."
+                    : finalAmount === 0
+                      ? "Book for Free"
+                      : `Pay ${inr(finalAmount)}`}
                 </Button>
               )}
             </div>
@@ -795,19 +844,25 @@ export default function BookingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {selectedService && (
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-stone-50 rounded-lg">
+                    {" "}
+                    {/* Updated color */}
                     <h4 className="font-medium">{selectedService.name}</h4>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-stone-600">
+                        {" "}
+                        {/* Updated color */}
                         {(selectedService.duration ?? selectedService.duration_minutes ?? 60) as number} minutes
                       </span>
-                      <span className="font-semibold">{peso(servicePrice)}</span>
+                      <span className="font-semibold">{inr(servicePrice)}</span> {/* Updated currency */}
                     </div>
                   </div>
                 )}
 
                 {selectedTherapist && (
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-stone-50 rounded-lg">
+                    {" "}
+                    {/* Updated color */}
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
                         <AvatarImage
@@ -834,7 +889,9 @@ export default function BookingPage() {
                           {selectedTherapist.name ||
                             `${selectedTherapist.first_name || ""} ${selectedTherapist.last_name || ""}`.trim()}
                         </h4>
-                        <div className="flex items-center text-sm text-gray-600">
+                        <div className="flex items-center text-sm text-stone-600">
+                          {" "}
+                          {/* Updated color */}
                           <Star className="w-3 h-3 text-yellow-400 fill-current mr-1" />
                           {(selectedTherapist.rating ?? 4.8).toFixed(1)} ({selectedTherapist.total_reviews ?? 0})
                         </div>
@@ -844,9 +901,13 @@ export default function BookingPage() {
                 )}
 
                 {selectedDate && selectedTime && (
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-stone-50 rounded-lg">
+                    {" "}
+                    {/* Updated color */}
                     <h4 className="font-medium mb-2">Date & Time</h4>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-stone-600">
+                      {" "}
+                      {/* Updated color */}
                       <div>
                         {selectedDate.toLocaleDateString("en-US", {
                           weekday: "long",
@@ -864,26 +925,33 @@ export default function BookingPage() {
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between">
                       <span>Service Fee</span>
-                      <span>{peso(servicePrice)}</span>
+                      <span>{inr(servicePrice)}</span> {/* Updated currency */}
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
+                    <div className="flex justify-between text-sm text-stone-600">
+                      {" "}
+                      {/* Updated color */}
                       <span>Platform Fee</span>
-                      <span>{peso(PLATFORM_FEE)}</span>
+                      <span>{inr(PLATFORM_FEE)}</span> {/* Updated currency */}
                     </div>
                     {couponApplied && (
-                      <div className="flex justify-between text-sm text-green-700">
+                      <div className="flex justify-between text-sm text-teal-700">
+                        {" "}
+                        {/* Updated color */}
                         <span>Coupon Discount ({couponCode.trim().toLowerCase() || "code"})</span>
-                        <span>-{peso(discount)}</span>
+                        <span>-{inr(discount)}</span> {/* Updated currency */}
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total</span>
-                      <span>{peso(finalAmount)}</span>
+                      <span className="text-teal-700">{inr(finalAmount)}</span>{" "}
+                      {/* Updated currency & color */}
                     </div>
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-stone-500 space-y-1">
+                  {" "}
+                  {/* Updated color */}
                   <p>• Free cancellation up to 24 hours before</p>
                   <p>• All therapists are verified and insured</p>
                   <p>• 100% satisfaction guarantee</p>
