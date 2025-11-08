@@ -8,12 +8,13 @@ import Link from "next/link"
 import Image from "next/image"
 
 // Define the services available
+// Define the services available
 const allServices = [
   {
     id: 1,
     name: "Swedish Therapeutic",
     description: "Deep massage using signature balm and Swedish movements to release tight muscle groups",
-    price: 999, // Price in INR
+    price: 1399, // Price in INR
     duration: 60,
     image: "/relaxing-swedish-massage.png",
     benefits: ["Stress Relief", "Chronic Pain", "Hard Massage"],
@@ -31,7 +32,7 @@ const allServices = [
     id: 3,
     name: "Swedish Aromatherapy",
     description: "Medium pressure massage using long gliding strokes with organic essential oil aromatherapy",
-    price: 1599, // Price in INR
+    price: 999, // Price in INR
     duration: 60,
     image: "/aromatherapy-massage-oils.png",
     benefits: ["Stress Relief", "Improve Mood", "Relaxation"],
@@ -49,19 +50,19 @@ const allServices = [
     id: 5,
     name: "Hot Stone Massage",
     description: "Uses smooth, heated stones to warm and relax muscles, allowing for deeper pressure.",
-    price: 1699, // Price in INR
+    price: 1499, // Price in INR
     duration: 75,
-    image: "/deep-tissue-massage.png", // Use a relevant placeholder
-    benefits: ["Muscle Tension", "Blood Circulation", "Deep Relaxation"],
+    image: "/deep-tissue-massage.png",
+    benefits: ["Deep Relaxation", "Muscle Tension", "Wellness"],
   },
   {
     id: 6,
-    name: "Sports Massage",
-    description: "Focuses on preventing and treating injuries to muscles and tendons, ideal for athletes.",
-    price: 4999, // Price in INR
-    duration: 60,
-    image: "/wellness-massage-therapy.png", // Use a relevant placeholder
-    benefits: ["Injury Prevention", "Flexibility", "Performance"],
+    name: "Deep Tissue Massage",
+    description: "Therapeutic massage targeting deep muscle layers and connective tissue",
+    price: 1599, // Price in INR
+    duration: 90,
+    image: "/wellness-massage-therapy.png",
+    benefits: ["Chronic Pain", "Muscle Knots", "Therapeutic"],
   },
 ]
 

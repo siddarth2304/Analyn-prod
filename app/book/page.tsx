@@ -137,32 +137,60 @@ export default function BookingPage() {
         if (tRes.status === "fulfilled" && tRes.value.ok) {
           const data = await tRes.value.json()
           setTherapists((data?.therapists || data || []) as Therapist[])
-        } else {
-          setTherapists([
-            {
-              id: 1,
-              first_name: "Maria",
-              last_name: "Santos",
-              profile_image: "/professional-female-therapist.png",
-              rating: 4.9,
-              total_reviews: 127,
-              specialties: ["Swedish", "Deep Tissue"],
-              distance: 2.3,
-              location: "Makati",
-            },
-            {
-              id: 2,
-              first_name: "Anna",
-              last_name: "Rodriguez",
-              profile_image: "/asian-female-therapist.png",
-              rating: 4.8,
-              total_reviews: 89,
-              specialties: ["Shiatsu", "Prenatal"],
-              distance: 3.1,
-              location: "BGC",
-            },
-          ] as any)
-        }
+      // ... inside the useEffect hook ...
+      } else {
+        setServices([
+          {
+            id: 1,
+            name: "Swedish Therapeutic",
+            description: "Deep massage...",
+            duration: 60,
+            price: 1399, // Updated price
+            category: "massage",
+          },
+          {
+            id: 2,
+            name: "Shiatsu",
+            description: "Japanese therapy...",
+            duration: 60,
+            price: 1299, // Updated price
+            category: "massage",
+          },
+          {
+            id: 3,
+            name: "Swedish Aromatherapy", // Updated name
+            description: "Long gliding strokes",
+            duration: 60,
+            price: 999, // Updated price
+            category: "massage",
+          },
+          {
+            id: 4,
+            name: "Office Syndrome Therapy", // Added
+            description: "Intense session for postural stress",
+            duration: 60,
+            price: 2999,
+            category: "massage",
+          },
+          {
+            id: 5,
+            name: "Deep Tissue Massage", // Added
+            description: "Targets deep muscle layers",
+            duration: 90,
+            price: 1599,
+            category: "massage",
+          },
+          {
+            id: 6,
+            name: "Hot Stone Massage", // Added
+            description: "Heated stones for relaxation",
+            duration: 75,
+            price: 1499,
+            category: "massage",
+          },
+        ] as any)
+      }
+// ...
       } catch {
         /* ignore */
       }

@@ -85,32 +85,34 @@ export default function TherapistProfilePage() {
       responseTime: "Usually responds within 1 hour",
       languages: ["English", "Hindi", "Spanish"], // Updated language
       certifications: ["Licensed Massage Therapist", "Aromatherapy Certification", "Deep Tissue Specialist"],
+      // ... inside the mockTherapist object ...
       services: [
         {
           name: "Swedish Therapeutic",
           duration: 60,
-          price: 7000, // Updated to INR
+          price: 1399, // Updated to INR
           description: "Deep massage using signature balm and Swedish movements to release tight muscle groups",
         },
         {
-          name: "Deep Tissue Massage",
+          name: "Shiatsu", // Added
           duration: 60,
-          price: 7800, // Updated to INR
-          description: "Intensive massage targeting deep muscle layers for chronic pain relief",
+          price: 1299, // Updated to INR
+          description: "A manipulative therapy developed in Japan...",
         },
         {
-          name: "Aromatherapy Massage",
+          name: "Swedish Aromatherapy",
           duration: 60,
-          price: 6800, // Updated to INR
+          price: 999, // Updated to INR
           description: "Relaxing massage with essential oils for stress relief and mood enhancement",
         },
         {
-          name: "Hot Stone Massage",
-          duration: 90,
-          price: 9000, // Updated to INR
-          description: "Therapeutic massage using heated stones for deep relaxation",
+          name: "Office Syndrome Therapy", // Added
+          duration: 60,
+          price: 2999, // Updated to INR
+          description: "An intense therapeutic session for repetitive postural stress",
         },
       ],
+// ...,
       reviews: [
         {
           id: "1",
