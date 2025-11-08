@@ -1,42 +1,39 @@
-// File: app/api/admin/therapists/[id]/approve/route.ts
-
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper function to verify admin
 async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
+
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
+
   const userProfile = await getUserProfileByEmail(decodedToken.email);
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// --- THIS IS THE FIX ---
-// We do not destructure the second argument. We name it 'context'.
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await verifyAdmin(); // Verify user is an admin
-    
-    // --- THIS IS THE FIX ---
-    // We get the id from context.params.id
-    const id = Number(context.params.id);
-    
-    if (!id) {
+    await verifyAdmin();
+
+    // Await context.params in Next.js 15+
+    const { id } = await context.params;
+    const therapistId = Number(id);
+
+    if (!therapistId) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
     }
 
     const result = await sql`
       UPDATE therapists 
       SET is_verified = true 
-      WHERE id = ${id} 
+      WHERE id = ${therapistId}
       RETURNING *
     `;
 
@@ -46,9 +43,16 @@ export async function POST(
 
     return NextResponse.json({ therapist: result.rows[0] }, { status: 200 });
   } catch (e: any) {
-    if (e.message === "Authentication required" || e.message === "Insufficient permissions") {
+    console.error("Error approving therapist:", e);
+    if (
+      e.message === "Authentication required" ||
+      e.message === "Insufficient permissions"
+    ) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
-    return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", detail: e?.message },
+      { status: 500 }
+    );
   }
 }

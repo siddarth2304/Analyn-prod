@@ -1,51 +1,57 @@
-// File: app/api/admin/therapists/[id]/reject/route.ts
-
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper function to verify admin
 async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
+
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
+
   const userProfile = await getUserProfileByEmail(decodedToken.email);
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// --- THIS IS THE FIX ---
-// We do not destructure the second argument. We name it 'context'.
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await verifyAdmin(); // Verify user is an admin
-    
-    // --- THIS IS THE FIX ---
-    // We get the id from context.params.id
-    const id = Number(context.params.id);
+    await verifyAdmin();
 
-    if (!id) {
+    const { id } = await context.params;
+    const therapistId = Number(id);
+
+    if (!therapistId) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
     }
 
-    const therapist = await sql`SELECT user_id FROM therapists WHERE id = ${id}`;
+    const therapist = await sql`SELECT user_id FROM therapists WHERE id = ${therapistId}`;
     if (therapist.rowCount === 0) {
       return NextResponse.json({ error: "Therapist not found" }, { status: 404 });
     }
-    const userId = therapist.rows[0].user_id;
 
+    const userId = therapist.rows[0].user_id;
     await sql`DELETE FROM users WHERE id = ${userId}`;
 
-    return NextResponse.json({ message: "Therapist rejected and user deleted" }, { status: 200 });
+    return NextResponse.json(
+      { message: "Therapist rejected and user deleted" },
+      { status: 200 }
+    );
   } catch (e: any) {
-    if (e.message === "Authentication required" || e.message === "Insufficient permissions") {
+    console.error("Error rejecting therapist:", e);
+    if (
+      e.message === "Authentication required" ||
+      e.message === "Insufficient permissions"
+    ) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
-    return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", detail: e?.message },
+      { status: 500 }
+    );
   }
 }
