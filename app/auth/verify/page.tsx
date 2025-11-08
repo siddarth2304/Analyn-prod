@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getAuth, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth"
-import app from "@/lib/firebase"
+import { app } from "@/lib/firebase" // <-- THIS IS THE FIX
 import { Button } from "@/components/ui/button"
 import { toast } from "react-hot-toast"
 
@@ -33,13 +33,31 @@ export default function VerifyPage() {
     }
   }, [])
 
-  if (!verified) return <p className="text-center mt-20">Verifying your account...</p>
+  if (!verified)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700 pt-20">
+        <p className="text-center">Verifying your account...</p>
+      </div>
+    )
 
   return (
-    <div className="max-w-md mx-auto mt-20 text-center space-y-4">
-      <h2 className="text-2xl font-bold">Account Activated!</h2>
-      <p>You can now <a href="/auth/login" className="text-blue-600 underline">login</a>.</p>
-      <Button onClick={() => router.push("/auth/login")}>Go to Login</Button>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700 pt-20">
+      <div className="max-w-md mx-auto text-center space-y-4">
+        <h2 className="text-2xl font-bold text-stone-800">Account Activated!</h2>
+        <p className="text-stone-700">
+          You can now{" "}
+          <a href="/auth/login" className="text-teal-600 hover:text-teal-700 underline">
+            login
+          </a>
+          .
+        </p>
+        <Button
+          onClick={() => router.push("/auth/login")}
+          className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
+        >
+          Go to Login
+        </Button>
+      </div>
     </div>
   )
 }
