@@ -1,6 +1,6 @@
 // File: app/api/admin/therapists/[id]/approve/route.ts
 
-import { NextResponse } from "next/server"; // <-- DO NOT import NextRequest
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
@@ -17,11 +17,18 @@ async function verifyAdmin() {
 }
 
 // --- THIS IS THE FIX ---
-// The argument must be 'request: Request'
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+// We do not destructure the second argument. We name it 'context'.
+export async function POST(
+  request: Request,
+  context: { params: { id: string } }
+) {
   try {
     await verifyAdmin(); // Verify user is an admin
-    const id = Number(params.id);
+    
+    // --- THIS IS THE FIX ---
+    // We get the id from context.params.id
+    const id = Number(context.params.id);
+    
     if (!id) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
     }

@@ -1,6 +1,6 @@
 // File: app/api/admin/therapists/pending/route.ts
 
-import { NextResponse } from "next/server"; // <-- DO NOT import NextRequest
+import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
@@ -16,9 +16,7 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// --- THIS IS THE FIX ---
-// The argument must be 'request: Request'
-export async function GET(request: Request) { 
+export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(); // Verify user is an admin
     const result = await sql`
