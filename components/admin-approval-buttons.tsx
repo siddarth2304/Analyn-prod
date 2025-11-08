@@ -18,16 +18,16 @@ export function AdminApprovalButtons({ therapistId }: { therapistId: number }) {
     try {
       const res = await fetch(`/api/admin/therapists/${therapistId}/approve`, {
         method: "POST",
-        credentials: "same-origin", // <-- THIS IS THE FIX
+        credentials: "same-origin", // Fixes the 403 error
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Approve failed");
       }
-      toast.success("Therapist approved!");
+      toast.success("Therapist approved!"); // <-- SUCCESS MESSAGE
       router.refresh(); // This reloads the Server Component data
     } catch (e: any) {
-      toast.error(e?.message || "Approve failed");
+      toast.error(e?.message || "Approve failed"); // <-- ERROR MESSAGE
     } finally {
       setIsLoading(false);
     }
@@ -43,16 +43,16 @@ export function AdminApprovalButtons({ therapistId }: { therapistId: number }) {
     try {
       const res = await fetch(`/api/admin/therapists/${therapistId}/reject`, {
         method: "POST",
-        credentials: "same-origin", // <-- THIS IS THE FIX
+        credentials: "same-origin", // Fixes the 403 error
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Reject failed");
       }
-      toast.success("Therapist rejected and deleted.");
+      toast.success("Therapist rejected and deleted."); // <-- SUCCESS MESSAGE
       router.refresh(); // This reloads the Server Component data
     } catch (e: any) {
-      toast.error(e?.message || "Reject failed");
+      toast.error(e?.message || "Reject failed"); // <-- ERROR MESSAGE
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +66,7 @@ export function AdminApprovalButtons({ therapistId }: { therapistId: number }) {
         className="flex-1 md:flex-none bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
       >
         <Check className="w-4 h-4 mr-2" />
-        {isLoading ? "Processing..." : "Approve"}
+        {isLoading ? "Processing..." : "Approve"} {/* <-- LOADING MESSAGE */}
       </Button>
       <Button
         onClick={reject}
@@ -75,7 +75,7 @@ export function AdminApprovalButtons({ therapistId }: { therapistId: number }) {
         className="flex-1 md:flex-none"
       >
         <X className="w-4 h-4 mr-2" />
-        Reject
+        {isLoading ? "Processing..." : "Reject"} {/* <-- LOADING MESSAGE */}
       </Button>
     </div>
   );
