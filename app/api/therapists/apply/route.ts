@@ -1,7 +1,7 @@
 // File: app/api/therapists/apply/route.ts
 
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres"; // Use the same Vercel/Neon client as lib/database.ts
+import { sql } from "@vercel/postgres";
 
 export async function POST(request: Request) {
   const {
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     specialties, // This is the string[]
     hourlyRate,
     serviceRadius,
+    
   } = await request.json();
 
   // Simple validation
@@ -50,7 +51,6 @@ export async function POST(request: Request) {
     }
 
     // 2. Create the new therapist, linking the user_id
-    // Your 'specialties' column is 'text', so we must stringify the array
     const specialtiesString = JSON.stringify(specialties);
 
     const newTherapistResult = await sql`
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       )
       RETURNING id;
     `;
-
+    
     const newTherapistId = newTherapistResult.rows[0].id;
 
     return NextResponse.json({
@@ -72,18 +72,21 @@ export async function POST(request: Request) {
       userId: newUserId,
       therapistId: newTherapistId,
     });
+
   } catch (error: any) {
+    // --- THIS IS THE IMPROVEMENT ---
+    // This will now catch ALL errors, not just '23505'
     console.error("Application submission failed:", error);
-    // Check for unique email error
-    if (error.code === "23505") {
-      // PostgreSQL unique violation
+    
+    if (error.code === '23505') { // PostgreSQL unique violation
       return NextResponse.json(
         { error: "An account with this email already exists." },
         { status: 409 } // 409 Conflict
       );
     }
+    // Return a generic error and the specific database error code
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", detail: error.message, code: error.code },
       { status: 500 }
     );
   }
