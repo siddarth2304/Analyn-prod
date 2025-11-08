@@ -51,7 +51,7 @@ type Therapist = {
 }
 
 // Updated Platform Fee for INR
-const PLATFORM_FEE = 150
+const PLATFORM_FEE = 149
 
 // Updated currency function for INR
 function inr(n: number) {
@@ -61,7 +61,7 @@ function inr(n: number) {
 function evaluateCouponClient(code: string, total: number) {
   const normalized = code.trim().toLowerCase()
   if (!normalized) return { valid: false, free: false, discount: 0, message: "" }
-  if (normalized === "flash100")
+  if (normalized === "siddu100")
     return { valid: true, free: true, discount: total, message: "Flash sale applied: 100% off" }
   return { valid: false, free: false, discount: 0, message: "Invalid coupon code" }
 }
@@ -112,7 +112,7 @@ export default function BookingPage() {
               name: "Swedish Therapeutic",
               description: "Deep massage...",
               duration: 60,
-              price: 7000, // Updated price
+              price: 999, // Updated price
               category: "massage",
             },
             {
@@ -120,7 +120,7 @@ export default function BookingPage() {
               name: "Shiatsu",
               description: "Japanese therapy...",
               duration: 60,
-              price: 7800, // Updated price
+              price: 1299, // Updated price
               category: "massage",
             },
             {
@@ -128,7 +128,7 @@ export default function BookingPage() {
               name: "Aromatherapy",
               description: "Long gliding strokes",
               duration: 60,
-              price: 6800, // Updated price
+              price: 1999, // Updated price
               category: "massage",
             },
           ] as any)
