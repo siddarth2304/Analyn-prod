@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useAuth } from "@/components/auth-provider" // 1. Import useAuth
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, X } from "lucide-react" // Import icons
-import toast from "react-hot-toast" // For better notifications
+import { Check, X } from "lucide-react"
+import toast from "react-hot-toast"
 
 type Therapist = {
   id: number
@@ -15,7 +16,7 @@ type Therapist = {
   last_name?: string
   email?: string
   phone?: string
-  specialties?: string // This will be a JSON string like '["Swedish", "Deep Tissue"]'
+  specialties?: string
   experience_years?: number
   hourly_rate?: number
   location?: string
@@ -24,41 +25,68 @@ type Therapist = {
 
 export default function AdminPage() {
   const [pending, setPending] = useState<Therapist[]>([])
-  const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // --- THIS IS THE FIX (Part 1) ---
+  // We now get both 'loading' and 'user' from the auth hook
+  const { loading: authLoading, user } = useAuth()
 
-  // Retrieve stored JWT from your auth flow
   function getToken() {
     if (typeof window === "undefined") return ""
     return localStorage.getItem("analyn:token") || ""
   }
 
-  // Fetch pending therapists from the API route we created
   async function load() {
-    setLoading(true)
+    setPageLoading(true)
     setError(null)
+    
+    const token = getToken()
+    // This check is now secondary, the useEffect is the main guard
+    if (!token) {
+      setError("Authentication token not found. Please log in again.");
+      setPageLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/therapists/pending", {
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${token}`,
         },
       })
-      if (!res.ok) {
-        const msg = await res.json().catch(() => ({}))
-        throw new Error(msg?.error || "Failed to load pending therapists")
-      }
+      
       const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to load pending therapists")
+      }
+      
       setPending(data.therapists || [])
     } catch (e: any) {
-      setError(e?.message || "Error")
+      setError(e?.message || "An unknown error occurred")
     } finally {
-      setLoading(false)
+      setPageLoading(false)
     }
   }
 
+  // --- THIS IS THE FIX (Part 2) ---
+  // This useEffect now WAITS for 'authLoading' to be false AND 'user' to exist.
   useEffect(() => {
+    if (authLoading) {
+      return // Wait for AuthProvider to finish loading
+    }
+    
+    if (!user) {
+      // Auth is done, but no user is logged in.
+      setError("Please log in as an admin to view this page.");
+      setPageLoading(false);
+      return;
+    }
+
+    // Auth is ready AND we have a user, now try to load the admin data
     load()
-  }, [])
+  }, [authLoading, user]) // The effect now depends on both
 
   // Approve a therapist
   async function approve(id: number) {
@@ -74,7 +102,7 @@ export default function AdminPage() {
         throw new Error(msg?.error || "Approve failed")
       }
       toast.success("Therapist approved!")
-      await load() // Refresh the list
+      await load()
     } catch (e: any) {
       toast.error(e?.message || "Approve failed")
     }
@@ -82,7 +110,6 @@ export default function AdminPage() {
 
   // Reject a therapist
   async function reject(id: number) {
-    // Add a confirmation dialog for safety
     if (!window.confirm("Are you sure? This will permanently delete the user and their application.")) {
       return
     }
@@ -99,10 +126,19 @@ export default function AdminPage() {
         throw new Error(msg?.error || "Reject failed")
       }
       toast.success("Therapist rejected and deleted.")
-      await load() // Refresh the list
+      await load()
     } catch (e: any) {
       toast.error(e?.message || "Reject failed")
     }
+  }
+
+  // Show a loading screen while auth OR the page is loading
+  if (authLoading || pageLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700 py-16 px-4 flex items-center justify-center">
+        <p className="text-lg">Loading Admin Panel...</p>
+      </div>
+    )
   }
 
   return (
@@ -118,15 +154,16 @@ export default function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading && <p>Loading...</p>}
             {error && <p className="text-red-600 font-medium p-4 bg-red-100 rounded-md">{error}</p>}
-            {!loading && pending.length === 0 && <p className="text-stone-500">No pending therapists.</p>}
+            
+            {!pageLoading && pending.length === 0 && !error && (
+              <p className="text-stone-500">No pending therapists.</p>
+            )}
             
             <ul className="space-y-4">
               {pending.map((t) => {
                 let specialties: string[] = []
                 try {
-                  // Parse the JSON string from the database
                   specialties = JSON.parse(t.specialties || "[]")
                 } catch (e) { console.error("Failed to parse specialties", e) }
 
@@ -166,11 +203,6 @@ export default function AdminPage() {
             </ul>
           </CardContent>
         </Card>
-
-        <p className="text-sm text-stone-500 mt-4">
-          Tip: Log in as an admin user to get a valid token stored as {"analyn:token"} in localStorage. The page will then
-          load pending therapists and allow actions.
-        </p>
       </div>
     </div>
   )
