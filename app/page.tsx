@@ -151,13 +151,9 @@ export default function HomePage() {
             {services.map((service) => (
               <Card
                 key={service.id}
-                className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden"
+                className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden flex flex-col h-full"
               >
-                {service.popular && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">Most Popular</Badge>
-                  </div>
-                )}
+                {/* "Most Popular" Badge Removed From Here */}
                 <div className="relative h-48 overflow-hidden">
                   <Image
                     src={service.image || "/placeholder.svg"}
@@ -167,7 +163,7 @@ export default function HomePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>
-                <CardContent className="p-6">
+                <CardContent className="p-6 flex flex-col flex-1">
                   <h3 className="text-xl font-semibold mb-2">{service.name}</h3>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">{service.description}</p>
 
@@ -187,7 +183,7 @@ export default function HomePage() {
                     <div className="text-2xl font-bold text-green-600">₱{service.price}</div>
                   </div>
 
-                  <Link href={`/book?service=${service.id}`}>
+                  <Link href={`/book?service=${service.id}`} className="mt-auto">
                     <Button className="w-full group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all">
                       Book Now
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -221,7 +217,10 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center p-8 border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <Card
+                key={index}
+                className="text-center p-8 border-0 shadow-lg hover:shadow-xl transition-shadow h-full"
+              >
                 <div className="flex justify-center mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
@@ -399,4 +398,3 @@ export default function HomePage() {
     </div>
   )
 }
-
