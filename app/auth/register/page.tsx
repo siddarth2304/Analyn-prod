@@ -1,4 +1,4 @@
-// app/auth/register/page.tsx
+// File: app/auth/register/page.tsx
 
 "use client";
 
@@ -9,8 +9,9 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signInWithPopup,
+  deleteUser, // Import deleteUser
 } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase"; // This import is now safe
+import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import toast from "react-hot-toast";
-import { Leaf, ArrowLeft } from "lucide-react"; // Import Leaf and ArrowLeft
+import { Leaf, ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const [activeTab, setActiveTab] = useState("client");
@@ -33,30 +34,26 @@ export default function RegisterPage() {
 
   // This function creates the user in your NeonDB
   const createUserInDatabase = async (user: any, role: string) => {
-    try {
-      const { uid, email } = user;
-      // Extract names from form, or use defaults
-      const firstName = (document.querySelector('input[name="firstName"]') as HTMLInputElement)?.value || "New";
-      const lastName = (document.querySelector('input[name="lastName"]') as HTMLInputElement)?.value || "User";
+    const { uid, email } = user;
+    const firstName = (document.querySelector('input[name="firstName"]') as HTMLInputElement)?.value || "New";
+    const lastName = (document.querySelector('input[name="lastName"]') as HTMLInputElement)?.value || "User";
 
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          firebaseUid: uid,
-          firstName,
-          lastName,
-          role,
-        }),
-      });
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        firebaseUid: uid,
+        firstName,
+        lastName,
+        role,
+      }),
+    });
 
-      if (!response.ok) {
-        throw new Error("Failed to create user profile in database.");
-      }
-    } catch (dbError: any) {
-      console.error("Database user creation failed:", dbError);
-      toast.error("Error setting up your profile. Please contact support.");
+    if (!response.ok) {
+      // If DB fails, we must throw an error
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to create user profile in database.");
     }
   };
 
@@ -68,24 +65,37 @@ export default function RegisterPage() {
     const fd = new FormData(e.currentTarget as HTMLFormElement);
     const email = fd.get("email") as string;
     const password = fd.get("password") as string;
-    const role = activeTab; // 'client' or 'therapist'
+    const role = activeTab;
+
+    let firebaseUser = null; // Store the user to delete on failure
 
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
+      firebaseUser = cred.user; // Save the user
 
-      // Create user in NeonDB *after* successful Firebase creation
-      if (cred.user) {
-        await createUserInDatabase(cred.user, role);
-        await sendEmailVerification(cred.user, {
-          url: window.location.origin + "/auth/login",
-        });
-        toast.success(
-          "Account created! Please verify your email before logging in."
-        );
-        router.push("/auth/login"); // Send to login page
-      }
+      // --- THIS IS THE FIX ---
+      // Now, we try to create the user in our DB
+      await createUserInDatabase(cred.user, role);
+      
+      // Only send verification if DB creation was successful
+      await sendEmailVerification(cred.user, {
+        url: window.location.origin + "/auth/login",
+      });
+      
+      toast.success(
+        "Account created! Please verify your email before logging in."
+      );
+      router.push("/auth/login");
+
     } catch (err: any) {
-      // This is the fix for "email-already-in-use"
+      // --- THIS IS THE FIX ---
+      // If *any* part fails (Firebase or DB), handle the error
+      if (firebaseUser) {
+        // If DB creation failed, we must delete the Firebase user to avoid de-sync
+        await deleteUser(firebaseUser);
+        console.error("Database sync failed, rolling back Firebase user.");
+      }
+      
       if (err.code === "auth/email-already-in-use") {
         setError("This email is already in use. Please log in instead.");
       } else {
@@ -99,14 +109,11 @@ export default function RegisterPage() {
   const handleGoogle = async () => {
     setLoading(true);
     setError("");
-    const role = activeTab; // 'client' or 'therapist'
+    const role = activeTab;
 
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      
-      // Create user in NeonDB after Google sign-in
       await createUserInDatabase(result.user, role);
-
       toast.success("Signed in with Google");
       router.push("/book");
     } catch (err: any) {
@@ -116,6 +123,7 @@ export default function RegisterPage() {
     }
   };
 
+  // --- STYLING (This is the part that caused the error) ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700 flex items-center justify-center p-6">
       <div className="w-full max-w-md">

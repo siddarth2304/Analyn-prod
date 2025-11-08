@@ -1,5 +1,5 @@
 // File: lib/firebase-admin.ts
-
+console.log("FIREBASE_ADMIN_CONFIG:", process.env.FIREBASE_ADMIN_CONFIG ? "Loaded" : "!!! UNDEFINED !!!");
 import admin from "firebase-admin";
 
 if (!admin.apps.length) {

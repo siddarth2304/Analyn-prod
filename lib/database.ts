@@ -5,7 +5,7 @@ import { sql } from "@vercel/postgres"
 // Helper to map database row to user object
 function mapUser(row: any) {
   return {
-    id: row.id,
+    id: Number(row.id), // Ensure this is a number
     email: row.email,
     firstName: row.first_name,
     lastName: row.last_name,
@@ -17,7 +17,7 @@ function mapUser(row: any) {
   }
 }
 
-// Create a new user profile (Unchanged)
+// Create a new user profile
 export async function createUserProfile(userData: {
   email: string
   firstName: string
@@ -35,7 +35,6 @@ export async function createUserProfile(userData: {
   return mapUser(result.rows[0])
 }
 
-// --- THIS FUNCTION IS UPDATED ---
 // Get a user by email (CASE-INSENSITIVE)
 export async function getUserProfileByEmail(email: string) {
   // Add a safety check
@@ -50,7 +49,7 @@ export async function getUserProfileByEmail(email: string) {
   return result.rowCount > 0 ? mapUser(result.rows[0]) : null
 }
 
-// Update booking status (Unchanged)
+// Update booking status
 export async function updateBookingStatus(bookingId: string, status: string) {
   const result = await sql`
     UPDATE bookings
