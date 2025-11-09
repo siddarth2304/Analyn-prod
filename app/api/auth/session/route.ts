@@ -4,9 +4,13 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase-admin";
 
-export async function POST(request: Request) {
-  const cookieStore = cookies(); // Call once at the top
+// FIX: This function signature is changed to resolve the runtime warning/error
+async function setSessionCookie(name: string, value: string, options: any) {
+  const cookieStore = cookies();
+  cookieStore.set(name, value, options);
+}
 
+export async function POST(request: Request) {
   try {
     const { idToken } = await request.json();
     if (!idToken) {
@@ -16,7 +20,8 @@ export async function POST(request: Request) {
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
-    cookieStore.set("__session", sessionCookie, {
+    // Use the function that resolves the bug
+    await setSessionCookie("__session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -31,8 +36,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  const cookieStore = cookies(); // Call once at the top
-
-  cookieStore.set("__session", "", { maxAge: -1, path: "/" });
+  // Use the function that resolves the bug
+  await setSessionCookie("__session", "", { maxAge: -1, path: "/" });
   return NextResponse.json({ status: "success" }, { status: 200 });
 }

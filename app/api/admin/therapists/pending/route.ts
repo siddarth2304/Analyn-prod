@@ -15,7 +15,6 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// This is a GET request and must accept NextRequest
 export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(); // Verify user is an admin

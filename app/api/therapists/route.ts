@@ -1,121 +1,134 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getDatabase } from "@/lib/database"
+// File: app/api/therapists/route.ts
+
+import { type NextRequest, NextResponse } from "next/server";
+import { sql } from "@vercel/postgres";
+import { Kysely } from 'kysely'
+// FIX 1: Import the default export for the adapter
+import VercelKysely from '@vercel/postgres-kysely' 
+
+// Define the database structure for Kysely
+interface Database {
+  therapists: {
+    id: string;
+    user_id: string;
+    is_verified: boolean;
+    bio: string;
+    specialties: string; // JSON string
+    hourly_rate: number;
+    experience_years: number;
+    rating: number;
+    total_reviews: number;
+    location: string;
+    profile_image: string;
+  };
+  users: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
+}
+
+// Create the Kysely database client
+const db = new Kysely<Database>({
+  // FIX 2: Correct constructor call using the default import and required object syntax
+  dialect: new VercelKysely({ database: sql }), 
+});
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get("search") || ""
-    const specialty = searchParams.get("specialty") || ""
-    const minPrice = Number.parseFloat(searchParams.get("minPrice") || "0")
-    const maxPrice = Number.parseFloat(searchParams.get("maxPrice") || "1000")
-    const sortBy = searchParams.get("sortBy") || "rating"
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "12")
-    const offset = (page - 1) * limit
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || "";
+    const specialty = searchParams.get("specialty") || "";
+    const minPrice = Number.parseFloat(searchParams.get("minPrice") || "0");
+    const maxPrice = Number.parseFloat(searchParams.get("maxPrice") || "100000");
+    const sortBy = searchParams.get("sortBy") || "rating";
+    const page = Number.parseInt(searchParams.get("page") || "1");
+    const limit = Number.parseInt(searchParams.get("limit") || "12");
+    const offset = (page - 1) * limit;
 
-    const db = getDatabase()
-
-    // Build the query
-    const whereConditions = ["t.is_verified = ? AND t.is_available = ?"]
-    const queryParams: any[] = [true, true]
+    // Start building the query using Kysely
+    let query = db
+      .selectFrom("therapists as t")
+      .innerJoin("users as u", "t.user_id", "u.id")
+      .selectAll("t")
+      .select(["u.first_name", "u.last_name", "u.email", "u.phone"])
+      .where("t.is_verified", "=", true);
 
     if (search) {
-      whereConditions.push("(u.first_name LIKE ? OR u.last_name LIKE ? OR t.bio LIKE ?)")
-      const searchTerm = `%${search}%`
-      queryParams.push(searchTerm, searchTerm, searchTerm)
+      const searchTerm = `%${search}%`;
+      query = query.where((eb) =>
+        eb.or([
+          eb("u.first_name", "like", searchTerm),
+          eb("u.last_name", "like", searchTerm),
+          eb("t.bio", "like", searchTerm),
+        ])
+      );
     }
-
-    if (specialty) {
-      whereConditions.push("t.specialties LIKE ?")
-      queryParams.push(`%${specialty}%`)
-    }
-
+    
     if (minPrice > 0) {
-      whereConditions.push("t.hourly_rate >= ?")
-      queryParams.push(minPrice)
+      query = query.where("t.hourly_rate", ">=", minPrice);
+    }
+    if (maxPrice < 100000) {
+      query = query.where("t.hourly_rate", "<=", maxPrice);
     }
 
-    if (maxPrice < 1000) {
-      whereConditions.push("t.hourly_rate <= ?")
-      queryParams.push(maxPrice)
-    }
-
-    // Determine sort order
-    let orderBy = "t.rating DESC"
     switch (sortBy) {
-      case "price_low":
-        orderBy = "t.hourly_rate ASC"
-        break
-      case "price_high":
-        orderBy = "t.hourly_rate DESC"
-        break
-      case "experience":
-        orderBy = "t.experience_years DESC"
-        break
-      case "reviews":
-        orderBy = "t.total_reviews DESC"
-        break
-      default:
-        orderBy = "t.rating DESC"
+      case "price_low": query = query.orderBy("t.hourly_rate", "asc"); break;
+      case "price_high": query = query.orderBy("t.hourly_rate", "desc"); break;
+      case "experience": query = query.orderBy("t.experience_years", "desc"); break;
+      case "reviews": query = query.orderBy("t.total_reviews", "desc"); break;
+      default: query = query.orderBy("t.rating", "desc");
     }
 
-    const whereClause = whereConditions.join(" AND ")
+    const therapists = await query.limit(limit).offset(offset).execute();
 
-    // Get therapists with user info
-    const therapists = await db.query(
-      `
-      SELECT 
-        t.*,
-        u.first_name,
-        u.last_name,
-        u.email,
-        u.phone
-      FROM therapists t
-      JOIN users u ON t.user_id = u.id
-      WHERE ${whereClause}
-      ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?
-    `,
-      [...queryParams, limit, offset],
-    )
+    // Get count
+    let countQuery = db
+        .selectFrom("therapists as t")
+        .innerJoin("users as u", "t.user_id", "u.id")
+        .select(db.fn.countAll<number>().as("total"))
+        .where("t.is_verified", "=", true);
+    
+    // Replicate filters for counting
+    if (search) {
+        const searchTerm = `%${search}%`;
+        countQuery = countQuery.where((eb) =>
+            eb.or([
+                eb("u.first_name", "like", searchTerm),
+                eb("u.last_name", "like", searchTerm),
+                eb("t.bio", "like", searchTerm),
+            ])
+        );
+    }
+    if (minPrice > 0) { countQuery = countQuery.where("t.hourly_rate", ">=", minPrice); }
+    if (maxPrice < 100000) { countQuery = countQuery.where("t.hourly_rate", "<=", maxPrice); }
 
-    // Get total count for pagination
-    const countResult = await db.query(
-      `
-      SELECT COUNT(*) as total
-      FROM therapists t
-      JOIN users u ON t.user_id = u.id
-      WHERE ${whereClause}
-    `,
-      queryParams,
-    )
 
-    const total = countResult[0]?.total || 0
+    const countResult = await countQuery.executeTakeFirst();
+    const total = countResult?.total ?? 0;
 
     // Format the response
-    const formattedTherapists = therapists.map((therapist) => ({
+    const formattedTherapists = therapists.map((therapist: any) => ({
       id: therapist.id,
       userId: therapist.user_id,
       firstName: therapist.first_name,
       lastName: therapist.last_name,
       email: therapist.email,
       phone: therapist.phone,
-      specialties: therapist.specialties ? JSON.parse(therapist.specialties) : [],
+      specialties: (() => {
+        try { return JSON.parse(therapist.specialties); } catch { return []; }
+      })(),
       bio: therapist.bio,
       experienceYears: therapist.experience_years,
       hourlyRate: Number.parseFloat(therapist.hourly_rate || "0"),
       location: therapist.location,
-      latitude: therapist.latitude,
-      longitude: therapist.longitude,
-      availability: therapist.availability ? JSON.parse(therapist.availability) : {},
       rating: Number.parseFloat(therapist.rating || "0"),
       totalReviews: therapist.total_reviews,
       profileImage: therapist.profile_image,
       isVerified: therapist.is_verified,
-      isAvailable: therapist.is_available,
-      createdAt: therapist.created_at,
-      updatedAt: therapist.updated_at,
-    }))
+    }));
 
     return NextResponse.json({
       therapists: formattedTherapists,
@@ -125,9 +138,9 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    });
   } catch (error) {
-    console.error("Error fetching therapists:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error fetching therapists:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
