@@ -4,11 +4,12 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Session helper (unchanged)
+// Helper to fetch session cookie
 function getSessionCookie() {
   return cookies().get("__session")?.value;
 }
 
+// Admin verification logic (unchanged)
 async function verifyAdmin() {
   const sessionCookie = getSessionCookie();
   if (!sessionCookie) throw new Error("Authentication required");
@@ -18,6 +19,7 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
+// Next.js 15+ Dynamic Route Handler
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -25,6 +27,7 @@ export async function POST(
   try {
     await verifyAdmin();
 
+    // Safely get the numeric id
     const id = Number(params.id);
 
     if (!id) {
@@ -38,13 +41,13 @@ export async function POST(
       RETURNING *
     `;
 
-    if (result.rowCount === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return NextResponse.json({ error: "Therapist not found" }, { status: 404 });
     }
 
     return NextResponse.json({ therapist: result.rows[0] }, { status: 200 });
   } catch (e: any) {
-    if (e.message.includes("Auth") || e.message.includes("permissions")) {
+    if (e?.message?.includes("Auth") || e?.message?.includes("permissions")) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
     return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
