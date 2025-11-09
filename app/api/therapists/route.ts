@@ -3,10 +3,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 import { Kysely } from 'kysely'
-// FIX 1: Import the default export for the adapter
-import VercelKysely from '@vercel/postgres-kysely' 
+// FIX: Use star import and manually access the constructor later
+import * as VercelPostgresKysely from '@vercel/postgres-kysely' 
 
-// Define the database structure for Kysely
+// Define your database structure for Kysely (assuming you installed it)
 interface Database {
   therapists: {
     id: string;
@@ -30,9 +30,12 @@ interface Database {
   };
 }
 
+// FIX: Safely retrieve the constructor to avoid 'is not a constructor' error
+const VercelKysely = (VercelPostgresKysely as any).VercelKysely;
+
 // Create the Kysely database client
 const db = new Kysely<Database>({
-  // FIX 2: Correct constructor call using the default import and required object syntax
+  // FIX: Use the retrieved constructor and pass the SQL client in the options object
   dialect: new VercelKysely({ database: sql }), 
 });
 
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "12");
     const offset = (page - 1) * limit;
 
-    // Start building the query using Kysely
+    // Start building the query using Kysely (stable SQL)
     let query = db
       .selectFrom("therapists as t")
       .innerJoin("users as u", "t.user_id", "u.id")

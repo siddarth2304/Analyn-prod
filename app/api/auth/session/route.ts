@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase-admin";
 
-// FIX: This function signature is changed to resolve the runtime warning/error
-async function setSessionCookie(name: string, value: string, options: any) {
+// FIX: Change to a synchronous function that handles the cookies.set call directly.
+// This resolves the "cookies() should be awaited" error/warning.
+function setCookieSync(name: string, value: string, options: any) {
   const cookieStore = cookies();
   cookieStore.set(name, value, options);
 }
@@ -17,11 +18,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No token provided" }, { status: 400 });
     }
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const expiresIn = 60 * 60 * 24 * 5 * 1000;
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
-    // Use the function that resolves the bug
-    await setSessionCookie("__session", sessionCookie, {
+    // Use the fixed setter
+    setCookieSync("__session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  // Use the function that resolves the bug
-  await setSessionCookie("__session", "", { maxAge: -1, path: "/" });
+  // Use the fixed setter
+  setCookieSync("__session", "", { maxAge: -1, path: "/" });
   return NextResponse.json({ status: "success" }, { status: 200 });
 }
