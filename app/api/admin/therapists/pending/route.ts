@@ -6,7 +6,6 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper function to verify admin
 async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
@@ -16,6 +15,7 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
+// This is a GET request and must accept NextRequest
 export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(); // Verify user is an admin
