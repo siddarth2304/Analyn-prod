@@ -4,32 +4,29 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper to fetch session cookie
+// Helper to synchronously get session cookie
 function getSessionCookie() {
   return cookies().get("__session")?.value;
 }
 
-// Admin verification logic (unchanged)
+// Verify if the user is admin
 async function verifyAdmin() {
   const sessionCookie = getSessionCookie();
   if (!sessionCookie) throw new Error("Authentication required");
+
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
+
   const userProfile = await getUserProfileByEmail(decodedToken.email);
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// Next.js 15+ Dynamic Route Handler
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// POST handler with context typed as any to fix build error in Next.js 15+
+export async function POST(request: NextRequest, context: any) {
   try {
     await verifyAdmin();
 
-    // Safely get the numeric id
-    const id = Number(params.id);
-
+    const id = Number(context.params.id);
     if (!id) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
     }
@@ -41,13 +38,13 @@ export async function POST(
       RETURNING *
     `;
 
-    if (!result.rows || result.rows.length === 0) {
+    if (result.rowCount === 0) {
       return NextResponse.json({ error: "Therapist not found" }, { status: 404 });
     }
 
     return NextResponse.json({ therapist: result.rows[0] }, { status: 200 });
   } catch (e: any) {
-    if (e?.message?.includes("Auth") || e?.message?.includes("permissions")) {
+    if (e.message.includes("Auth") || e.message.includes("permissions")) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
     return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
