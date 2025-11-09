@@ -1,17 +1,14 @@
-// File: app/api/auth/session/route.ts
-
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase-admin";
 
-// FIX: Change to a synchronous function that handles the cookies.set call directly.
-// This resolves the "cookies() should be awaited" error/warning.
-function setCookieSync(name: string, value: string, options: any) {
-  const cookieStore = cookies();
+// Async cookie setter to handle the awaited cookies()
+async function setCookie(name: string, value: string, options: any) {
+  const cookieStore = await cookies();
   cookieStore.set(name, value, options);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
     if (!idToken) {
@@ -21,8 +18,7 @@ export async function POST(request: Request) {
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
-    // Use the fixed setter
-    setCookieSync("__session", sessionCookie, {
+    await setCookie("__session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -30,14 +26,13 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ status: "success" }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Session login error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function DELETE() {
-  // Use the fixed setter
-  setCookieSync("__session", "", { maxAge: -1, path: "/" });
+  await setCookie("__session", "", { maxAge: -1, path: "/" });
   return NextResponse.json({ status: "success" }, { status: 200 });
 }

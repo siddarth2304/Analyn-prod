@@ -4,14 +4,15 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper to synchronously get session cookie
-function getSessionCookie() {
-  return cookies().get("__session")?.value;
+// Async helper to get session cookie
+async function getSessionCookie() {
+  const cookieStore = await cookies();
+  return cookieStore.get("__session")?.value;
 }
 
-// Verify if the user is admin
+// Async admin verification function
 async function verifyAdmin() {
-  const sessionCookie = getSessionCookie();
+  const sessionCookie = await getSessionCookie();
   if (!sessionCookie) throw new Error("Authentication required");
 
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
@@ -21,24 +22,27 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// POST handler with context typed as any to fix build error in Next.js 15+
-export async function POST(request: NextRequest, context: any) {
+// POST route handler with destructured params argument
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await verifyAdmin();
 
-    const id = Number(context.params.id);
+    const id = Number(params.id);
     if (!id) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
     }
 
     const result = await sql`
-      UPDATE therapists 
-      SET is_verified = true 
-      WHERE id = ${id} 
+      UPDATE therapists
+      SET is_verified = true
+      WHERE id = ${id}
       RETURNING *
     `;
 
-    if (result.rowCount === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return NextResponse.json({ error: "Therapist not found" }, { status: 404 });
     }
 
@@ -47,6 +51,9 @@ export async function POST(request: NextRequest, context: any) {
     if (e.message.includes("Auth") || e.message.includes("permissions")) {
       return NextResponse.json({ error: e.message }, { status: 403 });
     }
-    return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", detail: e?.message },
+      { status: 500 }
+    );
   }
 }
