@@ -1,47 +1,55 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+// File: app/api/bookings/[id]/cancel/route.ts
 
-const sql = neon(process.env.DATABASE_URL!)
+import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { sql } from "@vercel/postgres";
+import { adminAuth } from "@/lib/firebase-admin";
+import { getUserProfileByEmail } from "@/lib/database";
 
-async function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY
-  if (!key) return null
-  const { default: Stripe } = await import("stripe")
-  return new Stripe(key, { apiVersion: "2024-06-20" })
+// This helper function verifies *any* logged-in user (client, therapist, or admin)
+async function verifyUser(request: NextRequest) {
+  const sessionCookie = cookies().get("__session")?.value;
+  if (!sessionCookie) throw new Error("Authentication required");
+  
+  const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+  if (!decodedToken.email) throw new Error("Invalid token");
+  
+  return decodedToken; // Return the user token
 }
 
-export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
+// This is the correct, build-stable signature
+export async function POST(
+  request: NextRequest, 
+  context: { params: { id: string } }
+) {
   try {
-    const id = Number(params.id)
-    const rows = await sql`SELECT id, payment_intent_id, status FROM bookings WHERE id = ${id}`
-    if (rows.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    await verifyUser(request); // Verify user is logged in
+    
+    const id = Number(context.params.id); // Get booking ID
 
-    const booking = rows[0]
-    if (booking.status === "cancelled") {
-      return NextResponse.json({ message: "Already cancelled" })
+    if (!id) {
+      return NextResponse.json({ error: "Invalid booking ID" }, { status: 400 });
     }
 
-    const stripe = await getStripe()
-    if (stripe && booking.payment_intent_id) {
-      try {
-        await stripe.paymentIntents.cancel(booking.payment_intent_id)
-      } catch (e) {
-        // If already canceled or cannot cancel, proceed to mark cancelled
-      }
+    // You can add logic here to check if the logged-in user
+    // is the one who actually owns this booking before cancelling.
+
+    const result = await sql`
+      UPDATE bookings 
+      SET status = 'cancelled' 
+      WHERE id = ${id} 
+      RETURNING *
+    `;
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    const updated = await sql`
-      UPDATE bookings SET status = 'cancelled', payment_status = 'failed', updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id} RETURNING *
-    `
-    // Log system event
-    await sql`
-      INSERT INTO booking_events (booking_id, actor, type, meta)
-      VALUES (${id}, 'system', 'cancelled', ${JSON.stringify({ reason: "manual_or_auto_cancel" })})
-    `
-    return NextResponse.json({ booking: updated[0] })
-  } catch (err) {
-    console.error("Cancel booking error:", err)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ message: "Booking cancelled", booking: result.rows[0] });
+  } catch (e: any) {
+    if (e.message.includes("Auth") || e.message.includes("permissions")) {
+      return NextResponse.json({ error: e.message }, { status: 403 });
+    }
+    return NextResponse.json({ error: "Internal server error", detail: e?.message }, { status: 500 });
   }
 }

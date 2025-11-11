@@ -15,17 +15,13 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// --- THIS IS THE FIX ---
-// We are using 'any' for the context type to force the Next.js
-// build server to accept it and stop the build error.
+// This is the correct, build-stable signature
 export async function POST(
   request: NextRequest, 
-  context: any 
+  context: { params: { id: string } } 
 ) {
   try {
-    await verifyAdmin(); // Verify user is an admin
-    
-    // Access ID safely from the context
+    await verifyAdmin();
     const id = Number(context.params.id); 
     
     if (!id) {
