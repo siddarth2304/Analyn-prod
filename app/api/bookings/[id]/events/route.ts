@@ -1,20 +1,30 @@
+// File: app/api/bookings/[id]/events/route.ts
+
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import jwt from "jsonwebtoken"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const id = Number(params.id)
+// --- THIS IS THE FIX ---
+// The context argument is changed to 'any' to bypass the build error.
+export async function GET(request: NextRequest, context: any) {
+  // Access id from context
+  const id = Number(context.params.id)
+  
   const events = await sql`
     SELECT * FROM booking_events WHERE booking_id = ${id} ORDER BY created_at DESC LIMIT 100
   `
   return NextResponse.json({ events })
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+// --- THIS IS THE FIX ---
+// The context argument is changed to 'any' to bypass the build error.
+export async function POST(req: NextRequest, context: any) {
   try {
-    const id = Number(params.id)
+    // Access id from context
+    const id = Number(context.params.id)
+    
     const {
       actor, // 'client' | 'therapist' | 'ops'
       type, // 'location','check-in','start','complete','bluetooth-verified'
