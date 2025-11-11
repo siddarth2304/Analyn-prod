@@ -5,9 +5,9 @@ import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase-admin";
 
 // FIX: This synchronous function resolves the persistent 'cookies().set' runtime error.
-function setCookieSync(name: string, value: string, options: any) {
+async function setCookieSync(name: string, value: string, options: any) {
   const cookieStore = cookies();
-  cookieStore.set(name, value, options);
+  (await cookieStore).set(name, value, options);
 }
 
 export async function POST(request: Request) {
