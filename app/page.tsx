@@ -1,90 +1,131 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import {
-  MapPin,
-  Clock,
-  Shield,
-  Heart,
-  ArrowRight,
-  Search,
-  Calendar,
-  Globe,
-  Leaf, // Added Leaf for logo
-} from "lucide-react"
+import { MapPin, Clock, Shield, Heart, ArrowRight, Search, Calendar, Globe, Leaf, LocateFixed, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import toast from "react-hot-toast"
+
+// OpenCage Geocoding API Key (Loaded from .env.local or Vercel Environment)
+const OPENCAGE_API_KEY = process.env.NEXT_PUBLIC_OPENCAGE_API_KEY;
 
 export default function HomePage() {
   const [searchLocation, setSearchLocation] = useState("")
+  const [locationStatus, setLocationStatus] = useState("Enter your location...")
+  const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  // --- Geocoding Function (Address to Coordinates) ---
+  const handleGeocodeSearch = useCallback(async (query: string) => {
+    setSuggestions([]);
+    if (!query || query.length < 3) return;
+    
+    if (!OPENCAGE_API_KEY) {
+        console.error("OpenCage API key is missing.");
+        return;
+    }
+
+    try {
+        const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${OPENCAGE_API_KEY}&limit=5`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            setSuggestions(data.results.map((r: any) => ({
+                formatted: r.formatted,
+                lat: r.geometry.lat,
+                lng: r.geometry.lng,
+            })));
+        } else {
+            setSuggestions([]);
+        }
+    } catch (error) {
+        console.error("Geocoding fetch error:", error);
+        toast.error("Error fetching location suggestions.");
+    }
+  }, []);
+
+  // --- NEW: Reverse Geocoding Helper Function ---
+  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+      if (!OPENCAGE_API_KEY) {
+          return "Coordinates determined";
+      }
+      try {
+          const url = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${OPENCAGE_API_KEY}&pretty=1`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.results && data.results.length > 0) {
+              // Return the best, most general formatted address (e.g., city/state)
+              return data.results[0].formatted || `Location near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+          }
+          return `Location near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+      } catch (error) {
+          console.error("Reverse Geocoding error:", error);
+          return `Location near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+      }
+  };
+
+  // --- Select Location from Suggestions ---
+  const handleSelectLocation = (suggestion: any) => {
+    setSearchLocation(suggestion.formatted);
+    setLocationStatus(suggestion.formatted);
+    setCoords({ lat: suggestion.lat, lng: suggestion.lng });
+    setSuggestions([]); // Clear suggestions after selection
+    toast.success("Location set: " + suggestion.formatted.split(',')[0]);
+  }
+
+  // --- UPDATED: Geolocation Function (Browser Pin + Reverse Geocoding) ---
+  const handleLocateUser = () => {
+    setLocationStatus("Locating...")
+    setSuggestions([]);
+
+    if (!navigator.geolocation) {
+      setLocationStatus("Geolocation not supported by this browser.")
+      toast.error("Geolocation not supported.")
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => { // Made function async
+        const { latitude, longitude } = position.coords
+        
+        // 1. Store Coordinates
+        setCoords({ lat: latitude, lng: longitude }) 
+        
+        // 2. Perform Reverse Geocoding
+        const locationName = await reverseGeocode(latitude, longitude);
+
+        // 3. Update UI with friendly name
+        setLocationStatus(`Current location set!`)
+        setSearchLocation(locationName);
+        toast.success(`Location set to ${locationName.split(',')[0]}!`)
+      },
+      (error) => {
+        setLocationStatus("Could not determine your location.")
+        setCoords(null)
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    )
+  }
+
+  // --- MOCK DATA (REMAINS THE SAME) ---
   const services = [
-    {
-      id: 1,
-      name: "Swedish Therapeutic",
-      description: "Deep massage using signature balm and Swedish movements to release tight muscle groups",
-      price: 1399,
-      duration: 60,
-      image: "/relaxing-swedish-massage.png",
-      benefits: ["Stress Relief", "Chronic Pain", "Hard Massage"],
-      popular: true,
-    },
-    {
-      id: 2,
-      name: "Shiatsu",
-      description:
-        "A manipulative therapy developed in Japan incorporating techniques of anma, acupressure, stretching, and Western massage",
-      price: 1299,
-      duration: 60,
-      image: "/deep-tissue-massage.png",
-      benefits: ["Chronic Pain", "Joint Problems", "Headaches"],
-    },
-    {
-      id: 3,
-      name: "Swedish Aromatherapy",
-      description: "Medium pressure massage using long gliding strokes with organic essential oil aromatherapy",
-      price: 999,
-      duration: 60,
-      image: "/aromatherapy-massage-oils.png",
-      benefits: ["Stress Relief", "Improve Mood", "Relaxation"],
-    },
-    {
-      id: 4,
-      name: "Office Syndrome Therapy",
-      description:
-        "An intense therapeutic session to treat repetitive postural stress using multiple advanced massage modalities",
-      price: 2999,
-      duration: 60,
-      image: "/wellness-massage-therapy.png",
-      benefits: ["Carpal Tunnel", "Migraine", "Posture"],
-    },
+    { id: 1, name: "Swedish Therapeutic", description: "Deep massage using signature balm and Swedish movements to release tight muscle groups", price: 1399, duration: 60, image: "/relaxing-swedish-massage.png", benefits: ["Stress Relief", "Chronic Pain", "Hard Massage"], popular: true, },
+    { id: 2, name: "Shiatsu", description: "A manipulative therapy developed in Japan incorporating techniques of anma, acupressure, stretching, and Western massage", price: 1299, duration: 60, image: "/deep-tissue-massage.png", benefits: ["Chronic Pain", "Joint Problems", "Headaches"], },
+    { id: 3, name: "Swedish Aromatherapy", description: "Medium pressure massage using long gliding strokes with organic essential oil aromatherapy", price: 999, duration: 60, image: "/aromatherapy-massage-oils.png", benefits: ["Stress Relief", "Improve Mood", "Relaxation"], },
+    { id: 4, name: "Office Syndrome Therapy", description: "An intense therapeutic session to treat repetitive postural stress using multiple advanced massage modalities", price: 2999, duration: 60, image: "/wellness-massage-therapy.png", benefits: ["Carpal Tunnel", "Migraine", "Posture"], },
   ]
 
   const features = [
-    {
-      icon: <Shield className="w-8 h-8 text-teal-600" />,
-      title: "Verified Therapists",
-      description: "All therapists are background-checked and certified professionals",
-    },
-    {
-      icon: <Clock className="w-8 h-8 text-teal-600" />,
-      title: "On-Demand Booking",
-      description: "Book sessions instantly or schedule for later - available 24/7",
-    },
-    {
-      icon: <MapPin className="w-8 h-8 text-teal-600" />,
-      title: "At Your Location",
-      description: "Services delivered to your home, office, or preferred location",
-    },
-    {
-      icon: <Heart className="w-8 h-8 text-teal-600" />,
-      title: "Personalized Care",
-      description: "Customized treatments based on your specific needs and preferences",
-    },
+    { icon: <Shield className="w-8 h-8 text-teal-600" />, title: "Verified Therapists", description: "All therapists are background-checked and certified professionals", },
+    { icon: <Clock className="w-8 h-8 text-teal-600" />, title: "On-Demand Booking", description: "Book sessions instantly or schedule for later - available 24/7", },
+    { icon: <MapPin className="w-8 h-8 text-teal-600" />, title: "At Your Location", description: "Services delivered to your home, office, or preferred location", },
+    { icon: <Heart className="w-8 h-8 text-teal-600" />, title: "Personalized Care", description: "Customized treatments based on your specific needs and preferences", },
   ]
 
   const stats = [
@@ -94,8 +135,7 @@ export default function HomePage() {
     { number: "4.9", label: "Average Rating" },
   ]
 
-  return (
-    // Changed background gradient to a warmer, more "spa-like" feel
+  return ( // <-- The return statement that was likely broken
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700">
       {/* Hero Section */}
       <section className="py-20 px-4">
@@ -111,19 +151,77 @@ export default function HomePage() {
               your doorstep, anywhere in the world.
             </p>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto mb-8">
+            {/* Search Bar - UPDATED */}
+            <div className="max-w-3xl mx-auto mb-8">
               <div className="flex flex-col sm:flex-row gap-4 p-2 bg-white rounded-2xl shadow-lg border">
-                <div className="flex-1 relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5" />
+                
+                {/* Location Input Group */}
+                <div className="flex-1 relative flex items-center">
+                  <MapPin className="absolute left-4 text-stone-400 w-5 h-5 z-10" />
                   <Input
-                    placeholder="Enter your location..."
+                    placeholder={locationStatus}
                     value={searchLocation}
-                    onChange={(e) => setSearchLocation(e.target.value)}
-                    className="pl-12 border-0 focus:ring-0 text-lg h-14 text-stone-700"
+                    onChange={(e) => {
+                        setSearchLocation(e.target.value)
+                        setLocationStatus(e.target.value || "Enter your location...")
+                        setCoords(null);
+                        handleGeocodeSearch(e.target.value); // Trigger API search
+                    }}
+                    className="pl-12 pr-24 border-0 focus:ring-0 text-lg h-14 font-medium"
                   />
+                  
+                  {/* Clear/LocateFixed Button */}
+                  {searchLocation || coords ? (
+                     <button 
+                        onClick={() => {
+                            setSearchLocation("");
+                            setLocationStatus("Enter your location...");
+                            setCoords(null);
+                            setSuggestions([]);
+                        }}
+                        title="Clear location"
+                        type="button"
+                        className="absolute right-14 text-stone-500 hover:text-stone-700 transition z-10"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                  ) : null}
+
+                  {/* Geolocation Button */}
+                  <button 
+                    onClick={handleLocateUser}
+                    title="Use my current location"
+                    type="button"
+                    className="absolute right-4 text-teal-600 hover:text-emerald-700 transition z-10"
+                  >
+                    <LocateFixed className="w-6 h-6" />
+                  </button>
+
+                  {/* Suggestions Dropdown */}
+                  {suggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-lg shadow-xl z-50 text-left">
+                          {suggestions.map((suggestion, index) => (
+                              <button
+                                  key={index}
+                                  onClick={() => handleSelectLocation(suggestion)}
+                                  className="block w-full px-4 py-3 text-sm text-stone-700 hover:bg-teal-50 transition-colors border-b border-stone-100 last:border-b-0"
+                              >
+                                  {suggestion.formatted}
+                              </button>
+                          ))}
+                      </div>
+                  )}
                 </div>
-                <Link href="/book">
+                
+                <Link 
+                    href={`/book${coords ? `?lat=${coords.lat}&lng=${coords.lng}` : searchLocation ? `?location=${encodeURIComponent(searchLocation)}` : ''}`}
+                    onClick={(e) => {
+                        if (!searchLocation && !coords) {
+                            toast.error("Please enter or select a location first.");
+                            e.preventDefault();
+                        }
+                    }}
+                >
                   <Button
                     size="lg"
                     className="h-14 px-8 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
@@ -162,7 +260,7 @@ export default function HomePage() {
             {services.map((service) => (
               <Card
                 key={service.id}
-                className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden flex flex-col h-full"
+                className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden flex flex-col h-full bg-white"
               >
                 <div className="relative h-48 overflow-hidden">
                   <Image
@@ -182,7 +280,7 @@ export default function HomePage() {
                       <Badge
                         key={benefit}
                         variant="secondary"
-                        className="text-xs bg-emerald-100 text-emerald-800" // Themed badges
+                        className="text-xs bg-emerald-100 text-emerald-800"
                       >
                         {benefit}
                       </Badge>
@@ -194,7 +292,6 @@ export default function HomePage() {
                       <Clock className="w-4 h-4" />
                       <span>{service.duration} min</span>
                     </div>
-                    {/* Changed currency to INR (₹) and updated color */}
                     <div className="text-2xl font-bold text-teal-700">₹{service.price}</div>
                   </div>
 
@@ -277,15 +374,18 @@ export default function HomePage() {
       </section>
 
       {/* Therapist CTA */}
-      <section className="py-20 px-4 bg-gradient-to-r from-teal-600 to-emerald-600 text-white">
+      <section className="py-20 px-4">
         <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Are You a Wellness Professional?</h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+          <h2 className="text-4xl font-bold mb-4 text-stone-800">Are You a Wellness Professional?</h2>
+          <p className="text-xl mb-8 text-stone-600 max-w-2xl mx-auto">
             Join our global network of therapists and grow your practice with ANALYN's platform
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/therapists/apply">
-              <Button size="lg" variant="secondary" className="bg-white text-teal-600 hover:bg-gray-100">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
+              >
                 Apply as Therapist
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -294,7 +394,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-teal-600 bg-transparent"
+                className="bg-transparent text-teal-700 border-teal-700 hover:bg-teal-700 hover:text-white"
               >
                 Browse Therapists
               </Button>
@@ -309,7 +409,6 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                {/* Updated Logo */}
                 <div className="w-10 h-10 bg-gradient-to-r from-teal-600 to-emerald-600 rounded-full flex items-center justify-center">
                   <Leaf className="w-6 h-6 text-white" />
                 </div>
