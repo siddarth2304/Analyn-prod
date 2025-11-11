@@ -104,9 +104,6 @@ importers:
       '@vercel/postgres':
         specifier: ^0.10.0
         version: 0.10.0
-      '@vercel/postgres-kysely':
-        specifier: ^0.10.0
-        version: 0.10.0(kysely@0.28.8)
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.21(postcss@8.5.6)
@@ -149,9 +146,6 @@ importers:
       jsonwebtoken:
         specifier: latest
         version: 9.0.2
-      kysely:
-        specifier: ^0.28.8
-        version: 0.28.8
       leaflet:
         specifier: latest
         version: 1.9.4
@@ -1964,12 +1958,6 @@ packages:
       react:
         optional: true
 
-  '@vercel/postgres-kysely@0.10.0':
-    resolution: {integrity: sha512-X1kjLBvjLzE2gdWYSAxFWiRj9SxLYQWZFqIhzNVGG1VqJ8ROxoGiYhPPJrmIC+XACwDuK4SVB0EbFTEcaeO/pQ==}
-    engines: {node: '>=18.14'}
-    peerDependencies:
-      kysely: ^0.24.2 || ^0.25.0 || ^0.26.0 || ^0.27.0
-
   '@vercel/postgres@0.10.0':
     resolution: {integrity: sha512-fSD23DxGND40IzSkXjcFcxr53t3Tiym59Is0jSYIFpG4/0f0KO9SGtcp1sXiebvPaGe7N/tU05cH4yt2S6/IPg==}
     engines: {node: '>=18.14'}
@@ -2665,10 +2653,6 @@ packages:
 
   jws@4.0.0:
     resolution: {integrity: sha512-KDncfTmOZoOMTFG4mBlG0qUIOlc03fmzH+ru6RgYVZhPkyiy/92Owlt/8UEN+a4TXR1FQetfIpJE8ApdvdVxTg==}
-
-  kysely@0.28.8:
-    resolution: {integrity: sha512-QUOgl5ZrS9IRuhq5FvOKFSsD/3+IA6MLE81/bOOTRA/YQpKDza2sFdN5g6JCB9BOpqMJDGefLCQ9F12hRS13TA==}
-    engines: {node: '>=20.0.0'}
 
   leaflet@1.9.4:
     resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
@@ -5493,13 +5477,6 @@ snapshots:
       next: 15.2.4(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
 
-  '@vercel/postgres-kysely@0.10.0(kysely@0.28.8)':
-    dependencies:
-      '@vercel/postgres': 0.10.0
-      kysely: 0.28.8
-    transitivePeerDependencies:
-      - utf-8-validate
-
   '@vercel/postgres@0.10.0':
     dependencies:
       '@neondatabase/serverless': 0.9.5
@@ -6341,8 +6318,6 @@ snapshots:
     dependencies:
       jwa: 2.0.1
       safe-buffer: 5.2.1
-
-  kysely@0.28.8: {}
 
   leaflet@1.9.4: {}
 

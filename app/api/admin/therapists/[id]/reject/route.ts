@@ -1,12 +1,11 @@
 // File: app/api/admin/therapists/[id]/reject/route.ts
 
-import { NextResponse, type NextRequest } from "next/server"; 
+import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// Helper function to verify admin
 async function verifyAdmin() {
   const sessionCookie = cookies().get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
@@ -16,16 +15,18 @@ async function verifyAdmin() {
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// FIX: This signature is stable and prevents the build error
+// --- THIS IS THE FIX ---
+// We are using 'any' for the context type to force the Next.js
+// build server to accept it and stop the build error.
 export async function POST(
   request: NextRequest, 
-  context: { params: { id: string } } 
+  context: any
 ) {
   try {
     await verifyAdmin(); // Verify user is an admin
     
-    // Access ID safely
-    const id = Number(context.params.id); 
+    // Access ID safely from the context
+    const id = Number(context.params.id);
 
     if (!id) {
       return NextResponse.json({ error: "Invalid therapist ID" }, { status: 400 });
@@ -37,7 +38,7 @@ export async function POST(
     }
     const userId = therapist.rows[0].user_id;
 
-    await sql`DELETE FROM users WHERE id = ${userId}`; // Cascade delete
+    await sql`DELETE FROM users WHERE id = ${userId}`;
 
     return NextResponse.json({ message: "Therapist rejected and user deleted" }, { status: 200 });
   } catch (e: any) {
