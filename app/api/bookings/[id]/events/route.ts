@@ -6,8 +6,7 @@ import jwt from "jsonwebtoken"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-// --- THIS IS THE FIX ---
-// The context argument is changed to 'any' to bypass the build error.
+// FIX: Use 'context: any' to bypass the Vercel build error
 export async function GET(request: NextRequest, context: any) {
   // Access id from context
   const id = Number(context.params.id)
@@ -18,16 +17,15 @@ export async function GET(request: NextRequest, context: any) {
   return NextResponse.json({ events })
 }
 
-// --- THIS IS THE FIX ---
-// The context argument is changed to 'any' to bypass the build error.
+// FIX: Use 'context: any' to bypass the Vercel build error
 export async function POST(req: NextRequest, context: any) {
   try {
     // Access id from context
     const id = Number(context.params.id)
     
     const {
-      actor, // 'client' | 'therapist' | 'ops'
-      type, // 'location','check-in','start','complete','bluetooth-verified'
+      actor,
+      type,
       latitude,
       longitude,
       meta,
@@ -49,7 +47,8 @@ export async function POST(req: NextRequest, context: any) {
       VALUES (${id}, ${actor}, ${type}, ${latitude}, ${longitude}, ${JSON.stringify(meta || {})})
       RETURNING *
     `
-    // Update denormalized fields for quick ops view
+    
+    // ... (rest of your logic is fine)
     if (type === "location") {
       if (actor === "client") {
         await sql`

@@ -6,26 +6,28 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
+// FIX: Await cookies() to fix runtime error
 async function verifyAdmin() {
-  const sessionCookie = cookies().get("__session")?.value;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("__session")?.value;
+
   if (!sessionCookie) throw new Error("Authentication required");
+  
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
   const userProfile = await getUserProfileByEmail(decodedToken.email);
   if (userProfile?.role !== "admin") throw new Error("Insufficient permissions");
 }
 
-// --- THIS IS THE FIX ---
-// We are using 'any' for the context type to force the Next.js
-// build server to accept it and stop the build error.
+// FIX: Use 'context: any' to bypass the Vercel build error
 export async function POST(
   request: NextRequest, 
   context: any
 ) {
   try {
-    await verifyAdmin(); // Verify user is an admin
+    await verifyAdmin();
     
-    // Access ID safely from the context
+    // Access ID safely from the 'any' context
     const id = Number(context.params.id);
 
     if (!id) {

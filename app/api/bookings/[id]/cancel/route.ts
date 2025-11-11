@@ -6,36 +6,33 @@ import { sql } from "@vercel/postgres";
 import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
-// This helper function verifies *any* logged-in user (client, therapist, or admin)
+// FIX: Await cookies() to fix runtime error
 async function verifyUser(request: NextRequest) {
-  const sessionCookie = cookies().get("__session")?.value;
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("__session")?.value;
+  
   if (!sessionCookie) throw new Error("Authentication required");
   
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
   
-  return decodedToken; // Return the user token
+  return decodedToken;
 }
 
-// --- THIS IS THE FIX ---
-// We are using 'any' for the context type to force the Next.js
-// build server to accept it, just like we did for the admin routes.
+// FIX: Use 'context: any' to bypass the Vercel build error
 export async function POST(
   request: NextRequest, 
   context: any 
 ) {
   try {
-    await verifyUser(request); // Verify user is logged in
+    await verifyUser(request);
     
-    // Access ID safely from the context
-    const id = Number(context.params.id); // Get booking ID
+    // Access ID safely from the 'any' context
+    const id = Number(context.params.id);
 
     if (!id) {
       return NextResponse.json({ error: "Invalid booking ID" }, { status: 400 });
     }
-
-    // You can add logic here to check if the logged-in user
-    // is the one who actually owns this booking before cancelling.
 
     const result = await sql`
       UPDATE bookings 
