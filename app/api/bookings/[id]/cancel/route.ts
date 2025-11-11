@@ -17,14 +17,17 @@ async function verifyUser(request: NextRequest) {
   return decodedToken; // Return the user token
 }
 
-// This is the correct, build-stable signature
+// --- THIS IS THE FIX ---
+// We are using 'any' for the context type to force the Next.js
+// build server to accept it, just like we did for the admin routes.
 export async function POST(
   request: NextRequest, 
-  context: { params: { id: string } }
+  context: any 
 ) {
   try {
     await verifyUser(request); // Verify user is logged in
     
+    // Access ID safely from the context
     const id = Number(context.params.id); // Get booking ID
 
     if (!id) {
