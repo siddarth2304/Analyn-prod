@@ -7,7 +7,7 @@ import { adminAuth } from "@/lib/firebase-admin";
 import { getUserProfileByEmail } from "@/lib/database";
 
 async function verifyAdmin() {
-  const sessionCookie = cookies().get("__session")?.value;
+  const sessionCookie = (await cookies()).get("__session")?.value;
   if (!sessionCookie) throw new Error("Authentication required");
   const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
   if (!decodedToken.email) throw new Error("Invalid token");
