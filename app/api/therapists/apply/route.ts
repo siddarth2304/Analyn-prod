@@ -1,5 +1,3 @@
-// File: app/api/therapists/apply/route.ts
-
 import { NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 

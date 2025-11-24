@@ -9,17 +9,28 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
     }
 
-    const user = await getUserByEmail(email);
-    if (!user) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    // TS FIX: allow password property
+    const user = (await getUserByEmail(email)) as any;
+
+    if (!user || !user.password) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
     const token = jwt.sign(
@@ -33,7 +44,8 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    const cookieStore = await cookies(); // IMPORTANT FIX
+    // ✅ CORRECT — cookies() MUST NOT BE awaited
+    const cookieStore = cookies();
 
     cookieStore.set("auth-token", token, {
       httpOnly: true,
@@ -46,6 +58,9 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,25 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, CheckCircle, FileText, Award, MapPin } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, CheckCircle, Award } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function TherapistApplication() {
-  const [step, setStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null) // To show errors
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const router = useRouter();
+
+  // FORM DATA
   const [formData, setFormData] = useState({
-    // Personal Information
     firstName: "",
     lastName: "",
     email: "",
@@ -28,18 +31,65 @@ export default function TherapistApplication() {
     city: "",
     country: "",
 
-    // Professional Information
     bio: "",
     experienceYears: "",
     hourlyRate: "",
     serviceRadius: "10",
 
-    // Agreements
     termsAccepted: false,
     backgroundCheckConsent: false,
-  })
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
-  const router = useRouter()
+  });
+
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+
+  // REAL-TIME ERROR STATE
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    bio: "",
+    experienceYears: "",
+    hourlyRate: "",
+  });
+
+  // VALIDATION RULES
+  const validateField = (name: string, value: string) => {
+    let error = "";
+
+    switch (name) {
+      case "firstName":
+      case "lastName":
+      case "city":
+        if (!/^[A-Za-z\s]+$/.test(value)) error = "Only letters allowed";
+        break;
+
+      case "email":
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          error = "Invalid email format";
+        break;
+
+      case "phone":
+        if (!/^[0-9]{0,15}$/.test(value)) error = "Only digits allowed";
+        break;
+
+      case "bio":
+        if (value.length < 10) error = "Bio must be at least 10 characters";
+        break;
+
+      case "experienceYears":
+        if (isNaN(Number(value))) error = "Must be a valid number";
+        break;
+
+      case "hourlyRate":
+        if (isNaN(Number(value))) error = "Must be a valid amount";
+        break;
+    }
+
+    setErrors((prev) => ({ ...prev, [name]: error }));
+  };
 
   const specialtyOptions = [
     "Swedish Massage",
@@ -52,117 +102,69 @@ export default function TherapistApplication() {
     "Reiki Healing",
     "Thai Massage",
     "Shiatsu Massage",
-  ]
+  ];
 
   const handleSpecialtyToggle = (specialty: string) => {
     setSelectedSpecialties((prev) =>
-      prev.includes(specialty) ? prev.filter((s) => s !== specialty) : [...prev, specialty],
-    )
-  }
-
-  // --- THIS IS THE UPDATED FUNCTION ---
-  const handleSubmit = async () => {
-  // Final validation before submit
-  if (!formData.termsAccepted)
-    return alert("You must accept the Terms of Service");
-  if (!formData.backgroundCheckConsent)
-    return alert("You must consent to the background check");
-
-  // Optional re-check personal info
-  if (!formData.firstName.trim()) return alert("Missing First Name");
-  if (!formData.email.trim()) return alert("Missing Email");
-  if (!formData.phone.trim()) return alert("Missing Phone Number");
-
-  setIsLoading(true);
-  setFormError(null);
-
-  const applicationData = {
-    ...formData,
-    specialties: selectedSpecialties,
+      prev.includes(specialty) ? prev.filter((s) => s !== specialty) : [...prev, specialty]
+    );
   };
 
-  try {
-    const response = await fetch("/api/therapists/apply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(applicationData),
-    });
+  // SUBMIT HANDLER
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setFormError(null);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Submission failed");
+    const dataToSend = { ...formData, specialties: selectedSpecialties };
+
+    try {
+      const response = await fetch("/api/therapists/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSend),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Submission failed");
+      }
+
+      setIsLoading(false);
+      router.push("/therapists");
+    } catch (error: any) {
+      setFormError(error.message);
+      setIsLoading(false);
     }
+  };
 
-    setIsLoading(false);
-    router.push("/therapists");
-  } catch (error: any) {
-    console.error("Failed to submit application:", error);
-    setIsLoading(false);
-    setFormError(error.message);
-  }
-};
+  const nextStep = () => setStep(step < 3 ? step + 1 : step);
+  const prevStep = () => setStep(step > 1 ? step - 1 : step);
 
-
-const nextStep = () => {
-  if (step === 1) {
-    // Step 1 validations
-    if (!formData.firstName.trim()) return alert("Please enter your First Name");
-    if (!formData.lastName.trim()) return alert("Please enter your Last Name");
-    if (!formData.email.trim()) return alert("Please enter your Email");
-    const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(formData.email)) return alert("Please enter a valid email address");
-
-    if (!formData.phone.trim()) return alert("Please enter your Phone Number");
-    if (formData.phone.trim().length < 8) return alert("Phone number is too short");
-
-    if (!formData.address.trim()) return alert("Please enter your Full Address");
-    if (!formData.city.trim()) return alert("Please enter your City");
-    if (!formData.country.trim()) return alert("Please select your Country");
-  }
-
-  if (step === 2) {
-    // Step 2 validations
-    if (!formData.bio.trim()) return alert("Please enter your Bio");
-    if (!formData.experienceYears.trim()) return alert("Please choose years of experience");
-    if (!formData.hourlyRate.trim()) return alert("Please enter your hourly rate");
-    if (Number(formData.hourlyRate) <= 0) return alert("Hourly rate must be more than 0");
-
-    if (selectedSpecialties.length === 0)
-      return alert("Please select at least one specialty");
-
-    if (!formData.serviceRadius.trim())
-      return alert("Please select a service radius");
-  }
-
-  if (step < 3) setStep(step + 1);
-};
-
-
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1)
-  }
+  const submitDisabled =
+    isLoading ||
+    !formData.termsAccepted ||
+    !formData.backgroundCheckConsent ||
+    Object.values(errors).some((e) => e !== "");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 text-stone-700">
-      {/* Header removed, main navbar from layout will be used */}
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
-          {/* Progress Steps - Updated to 3 steps */}
+          {/* PROGRESS */}
           <div className="flex items-center justify-center mb-8">
-            {[1, 2, 3].map((stepNum) => (
-              <div key={stepNum} className="flex items-center">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step >= stepNum ? "bg-teal-600 text-white" : "bg-stone-200 text-stone-600"
+                    step >= s ? "bg-teal-600 text-white" : "bg-stone-200 text-stone-600"
                   }`}
                 >
-                  {step > stepNum ? <CheckCircle className="w-5 h-5" /> : stepNum}
+                  {step > s ? <CheckCircle className="w-5 h-5" /> : s}
                 </div>
-                {stepNum < 3 && (
+                {s < 3 && (
                   <div
                     className={`w-20 h-1 mx-2 ${
-                      step > stepNum ? "bg-teal-600" : "bg-stone-200"
+                      step > s ? "bg-teal-600" : "bg-stone-200"
                     }`}
                   />
                 )}
@@ -170,12 +172,17 @@ const nextStep = () => {
             ))}
           </div>
 
+          {/* PAGE TITLE */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2 text-stone-800">Join ANALYN as a Therapist</h1>
-            <p className="text-stone-600">Complete your application to start offering wellness services</p>
+            <h1 className="text-3xl font-bold mb-2 text-stone-800">
+              Join ANALYN as a Therapist
+            </h1>
+            <p className="text-stone-600">
+              Complete your application to start offering wellness services
+            </p>
           </div>
 
-          {/* Step 1: Personal Information */}
+          {/* STEP 1 — PERSONAL INFO */}
           {step === 1 && (
             <Card className="bg-white shadow-lg border-0">
               <CardHeader>
@@ -187,75 +194,109 @@ const nextStep = () => {
                 </CardTitle>
                 <CardDescription>Tell us about yourself</CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-6">
+                {/* FIRST + LAST NAME */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">First Name *</Label>
+                    <Label>First Name *</Label>
                     <Input
-                      id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("firstName", v);
+                        setFormData({ ...formData, firstName: v });
+                      }}
                     />
+                    {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
                   </div>
+
                   <div>
-                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Label>Last Name *</Label>
                     <Input
-                      id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("lastName", v);
+                        setFormData({ ...formData, lastName: v });
+                      }}
                     />
+                    {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
                   </div>
                 </div>
 
+                {/* EMAIL + PHONE */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="email">Email Address *</Label>
+                    <Label>Email *</Label>
                     <Input
-                      id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("email", v);
+                        setFormData({ ...formData, email: v });
+                      }}
                     />
+                    {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
                   </div>
+
                   <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label>Phone *</Label>
                     <Input
-                      id="phone"
-                      type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("phone", v);
+                        if (/^[0-9]*$/.test(v)) {
+                          setFormData({ ...formData, phone: v });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          !/[0-9]/.test(e.key) &&
+                          !["Backspace", "ArrowLeft", "ArrowRight", "Delete", "Tab"].includes(e.key)
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
+                    {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
                   </div>
                 </div>
 
+                {/* ADDRESS */}
                 <div>
-                  <Label htmlFor="address">Full Address *</Label>
+                  <Label>Full Address *</Label>
                   <Input
-                    id="address"
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Street address, city, postal code"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value });
+                    }}
                   />
                 </div>
 
+                {/* CITY + COUNTRY */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label>City *</Label>
                     <Input
-                      id="city"
                       value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("city", v);
+                        setFormData({ ...formData, city: v });
+                      }}
                     />
+                    {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
                   </div>
+
                   <div>
-                    <Label htmlFor="country">Country *</Label>
-                    <Select value={formData.country} onValueChange={(value) => setFormData({ ...formData, country: value })}>
+                    <Label>Country *</Label>
+                    <Select
+                      value={formData.country}
+                      onValueChange={(value) => setFormData({ ...formData, country: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
@@ -271,110 +312,97 @@ const nextStep = () => {
                   </div>
                 </div>
 
-                <Button
-                  onClick={nextStep}
-                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
-                >
-                  Continue to Professional Information
+                <Button className="w-full" onClick={nextStep}>
+                  Continue
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 2: Professional Information */}
+          {/* STEP 2 — PROFESSIONAL INFO */}
           {step === 2 && (
             <Card className="bg-white shadow-lg border-0">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <Award className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <span className="text-stone-800">Professional Information</span>
+                  <Award className="w-5 h-5 text-teal-600" />
+                  <span>Professional Information</span>
                 </CardTitle>
-                <CardDescription>Share your expertise and experience</CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-6">
+                {/* BIO */}
                 <div>
-                  <Label htmlFor="bio">Professional Bio *</Label>
+                  <Label>Professional Bio *</Label>
                   <Textarea
-                    id="bio"
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    placeholder="Tell clients about your background, training, and approach to wellness..."
                     rows={4}
-                    required
+                    value={formData.bio}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      validateField("bio", v);
+                      setFormData({ ...formData, bio: v });
+                    }}
                   />
+                  {errors.bio && <p className="text-red-500 text-sm">{errors.bio}</p>}
                 </div>
 
+                {/* EXPERIENCE + HOURLY RATE */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="experienceYears">Years of Experience *</Label>
-                    <Select
-                      value={formData.experienceYears}
-                      onValueChange={(value) => setFormData({ ...formData, experienceYears: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select experience" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 year</SelectItem>
-                        <SelectItem value="2">2 years</SelectItem>
-                        <SelectItem value="3">3 years</SelectItem>
-                        <SelectItem value="4">4 years</SelectItem>
-                        <SelectItem value="5">5+ years</SelectItem>
-                        <SelectItem value="10">10+ years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="hourlyRate">Hourly Rate (INR) *</Label>
+                    <Label>Years of Experience *</Label>
                     <Input
-                      id="hourlyRate"
-                      type="number"
-                      value={formData.hourlyRate}
-                      onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
-                      placeholder="e.g., 3000"
-                      required
+                      value={formData.experienceYears}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("experienceYears", v);
+                        if (/^[0-9]*$/.test(v)) setFormData({ ...formData, experienceYears: v });
+                      }}
                     />
+                    {errors.experienceYears && (
+                      <p className="text-red-500 text-sm">{errors.experienceYears}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>Hourly Rate (INR) *</Label>
+                    <Input
+                      value={formData.hourlyRate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        validateField("hourlyRate", v);
+                        if (/^[0-9]*$/.test(v)) setFormData({ ...formData, hourlyRate: v });
+                      }}
+                    />
+                    {errors.hourlyRate && (
+                      <p className="text-red-500 text-sm">{errors.hourlyRate}</p>
+                    )}
                   </div>
                 </div>
 
+                {/* SPECIALTIES */}
                 <div>
                   <Label>Service Specialties *</Label>
-                  <p className="text-sm text-stone-600 mb-3">Select all services you're qualified to provide</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {specialtyOptions.map((specialty) => (
-                      <div key={specialty} className="flex items-center space-x-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                    {specialtyOptions.map((spec) => (
+                      <div key={spec} className="flex items-center space-x-2">
                         <Checkbox
-                          id={specialty}
-                          checked={selectedSpecialties.includes(specialty)}
-                          onCheckedChange={() => handleSpecialtyToggle(specialty)}
+                          checked={selectedSpecialties.includes(spec)}
+                          onCheckedChange={() => handleSpecialtyToggle(spec)}
                         />
-                        <Label htmlFor={specialty} className="text-sm">
-                          {specialty}
-                        </Label>
+                        <span className="text-sm">{spec}</span>
                       </div>
                     ))}
                   </div>
-                  {selectedSpecialties.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {selectedSpecialties.map((specialty) => (
-                        <Badge key={specialty} variant="secondary" className="bg-emerald-100 text-emerald-800">
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
+                {/* SERVICE RADIUS */}
                 <div>
-                  <Label htmlFor="serviceRadius">Service Radius (km) *</Label>
+                  <Label>Service Radius (km)</Label>
                   <Select
                     value={formData.serviceRadius}
-                    onValueChange={(value) => setFormData({ ...formData, serviceRadius: value })}
+                    onValueChange={(v) => setFormData({ ...formData, serviceRadius: v })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="5">5 km</SelectItem>
@@ -384,131 +412,92 @@ const nextStep = () => {
                       <SelectItem value="25">25 km</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-stone-600 mt-1">How far are you willing to travel for appointments?</p>
                 </div>
 
+                {/* NEXT/BACK */}
                 <div className="flex space-x-4">
-                  <Button variant="outline" onClick={prevStep} className="flex-1">
+                  <Button variant="outline" className="flex-1" onClick={prevStep}>
                     Back
                   </Button>
-                  <Button
-                    onClick={nextStep}
-                    className="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
-                  >
-                    Continue to Review
+                  <Button className="flex-1" onClick={nextStep}>
+                    Continue
                   </Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 3: Review & Submit (Was Step 4) */}
+          {/* STEP 3 — REVIEW + SUBMIT */}
           {step === 3 && (
             <Card className="bg-white shadow-lg border-0">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <span className="text-stone-800">Review & Submit</span>
+                  <CheckCircle className="w-5 h-5 text-teal-600" />
+                  <span>Review & Submit</span>
                 </CardTitle>
-                <CardDescription>Review your application before submitting</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-stone-50 rounded-lg">
-                    <h4 className="font-medium mb-2">Personal Information</h4>
-                    <p className="text-sm text-stone-600">
-                      {formData.firstName} {formData.lastName} • {formData.email} • {formData.phone}
-                    </p>
-                    <p className="text-sm text-stone-600">
-                      {formData.address}, {formData.city}
-                    </p>
-                  </div>
 
-                  <div className="p-4 bg-stone-50 rounded-lg">
-                    <h4 className="font-medium mb-2">Professional Details</h4>
-                    <p className="text-sm text-stone-600 mb-2">
-                      {formData.experienceYears} years experience • ₹{formData.hourlyRate}/hour
-                    </p>
-                    <p className="text-sm text-stone-600 mb-2">Service radius: {formData.serviceRadius} km</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedSpecialties.map((specialty) => (
-                        <Badge key={specialty} variant="secondary" className="text-xs bg-emerald-100 text-emerald-800">
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
+              <CardContent className="space-y-6">
+                {/* PERSONA + PROFESSIONAL INFO Summary */}
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Personal Info</h4>
+                  <p>{formData.firstName} {formData.lastName}</p>
+                  <p>{formData.email}</p>
+                  <p>{formData.phone}</p>
+                  <p>{formData.address}, {formData.city}</p>
+                </div>
+
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Professional Details</h4>
+                  <p>{formData.experienceYears} years • ₹{formData.hourlyRate}/hr</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedSpecialties.map((s) => (
+                      <Badge key={s} variant="secondary">{s}</Badge>
+                    ))}
                   </div>
                 </div>
 
+                {/* TERMS */}
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="terms"
                       checked={formData.termsAccepted}
-                      onCheckedChange={(checked) => setFormData({ ...formData, termsAccepted: checked as boolean })}
+                      onCheckedChange={(c) => setFormData({ ...formData, termsAccepted: c as boolean })}
                     />
-                    <Label htmlFor="terms" className="text-sm">
-                      I agree to the{" "}
-                      <Link href="/terms" className="text-teal-600 hover:underline">
-                        Terms of Service
-                      </Link>{" "}
-                      and{" "}
-                      <Link href="/privacy" className="text-teal-600 hover:underline">
-                        Privacy Policy
-                      </Link>
-                    </Label>
+                    <Label>I agree to the Terms & Privacy Policy</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="background"
                       checked={formData.backgroundCheckConsent}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, backgroundCheckConsent: checked as boolean })
+                      onCheckedChange={(c) =>
+                        setFormData({ ...formData, backgroundCheckConsent: c as boolean })
                       }
                     />
-                    <Label htmlFor="background" className="text-sm">
-                      I consent to a background check as part of the verification process
-                    </Label>
+                    <Label>I consent to background verification</Label>
                   </div>
                 </div>
 
-                {/* Show error message here if submission fails */}
+                {/* SERVER SIDE ERRORS */}
                 {formError && (
                   <Alert variant="destructive">
                     <AlertDescription>{formError}</AlertDescription>
                   </Alert>
                 )}
 
-                <Alert className="bg-teal-50 border-teal-200">
-                  <CheckCircle className="h-4 w-4 text-teal-700" />
-                  <AlertDescription className="text-teal-800">
-                    <strong>What happens next?</strong>
-                    <br />
-                    After submission, our team will review your application. You'll receive an email within 2-3
-                    business days with the status of your application.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="flex space-x-4">
-                  <Button variant="outline" onClick={prevStep} className="flex-1">
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    className="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700"
-                    disabled={!formData.termsAccepted || !formData.backgroundCheckConsent || isLoading}
-                  >
-                    {isLoading ? "Submitting Application..." : "Submit Application"}
-                  </Button>
-                </div>
+                {/* SUBMIT BUTTON */}
+                <Button
+                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white"
+                  disabled={submitDisabled}
+                  onClick={handleSubmit}
+                >
+                  {isLoading ? "Submitting..." : "Submit Application"}
+                </Button>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
