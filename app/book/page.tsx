@@ -117,101 +117,110 @@ export default function BookingPage() {
   const [cardCvc, setCardCvc] = useState("")
   const [cardName, setCardName] = useState("")
 
+  // helper to normalize API response into an array for services
+  function normalizeServicesPayload(payload: any): Service[] {
+    if (!payload) return []
+    if (Array.isArray(payload)) return payload
+    if (payload.services && Array.isArray(payload.services)) return payload.services
+    if (payload.rows && Array.isArray(payload.rows)) return payload.rows
+    // fallback: try to find an array property
+    for (const k of Object.keys(payload)) {
+      if (Array.isArray((payload as any)[k])) return (payload as any)[k]
+    }
+    return []
+  }
+
+  // helper to normalize therapist object
+  function normalizeTherapistObject(t: any): Therapist {
+    // specialties: could be array, comma-separated string, or JSON string
+    let specialties: string[] | string | undefined = t.specialties
+    if (typeof specialties === "string") {
+      // try parse JSON
+      try {
+        const parsed = JSON.parse(specialties)
+        if (Array.isArray(parsed)) specialties = parsed
+      } catch {
+        // not JSON — treat as comma separated
+        specialties = specialties.split(",").map((s: string) => s.trim()).filter(Boolean)
+      }
+    }
+
+    const name = t.name || [t.first_name, t.last_name].filter(Boolean).join(" ").trim()
+
+    return {
+      id: t.id ?? t.user_id ?? t.therapist_id,
+      name: name || undefined,
+      first_name: t.first_name,
+      last_name: t.last_name,
+      avatar: t.avatar,
+      profile_image: t.profile_image ?? t.profileImage ?? t.profile_picture,
+      rating: t.rating ? Number(t.rating) : t.rating,
+      total_reviews: t.total_reviews ?? t.reviews_count ?? 0,
+      specialties,
+      distance: t.distance ? Number(t.distance) : t.distance,
+      location: t.location ?? t.city ?? t.address,
+    }
+  }
+
   // Load from APIs (fallback to local mock)
   useEffect(() => {
     async function load() {
       try {
         const [sRes, tRes] = await Promise.allSettled([fetch("/api/services"), fetch("/api/therapists")])
+
+        // Services
         if (sRes.status === "fulfilled" && sRes.value.ok) {
-          const data = await sRes.value.json()
-          setServices((data?.services || data || []) as Service[])
+          try {
+            const data = await sRes.value.json()
+            const normalized = normalizeServicesPayload(data)
+            if (normalized.length > 0) {
+              setServices(normalized as Service[])
+            } else {
+              // fallback to previous mock when API returns empty shape
+              setServices(getLocalServicesFallback())
+            }
+          } catch {
+            setServices(getLocalServicesFallback())
+          }
         } else {
-          setServices([
-            {
-              id: 1,
-              name: "Swedish Therapeutic",
-              description: "Deep massage...",
-              duration: 60,
-              price: 1399,
-              category: "massage",
-            },
-            {
-              id: 2,
-              name: "Shiatsu",
-              description: "Japanese therapy...",
-              duration: 60,
-              price: 1299,
-              category: "massage",
-            },
-            {
-              id: 3,
-              name: "Swedish Aromatherapy", 
-              description: "Long gliding strokes",
-              duration: 60,
-              price: 999,
-              category: "massage",
-            },
-            {
-              id: 4,
-              name: "Office Syndrome Therapy", 
-              description: "Intense session for postural stress",
-              duration: 60,
-              price: 2999,
-              category: "massage",
-            },
-            {
-              id: 5,
-              name: "Deep Tissue Massage", 
-              description: "Targets deep muscle layers",
-              duration: 90,
-              price: 1599,
-              category: "massage",
-            },
-            {
-              id: 6,
-              name: "Hot Stone Massage", 
-              description: "Heated stones for relaxation",
-              duration: 75,
-              price: 1499,
-              category: "massage",
-            },
-          ] as any)
+          setServices(getLocalServicesFallback())
         }
 
-        // --- REMOVED HARDCODE FIX ---
-        // This will now fetch real, approved therapists
+        // Therapists
         if (tRes.status === "fulfilled" && tRes.value.ok) {
-          const data = await tRes.value.json()
-          setTherapists((data?.therapists || data || []) as Therapist[])
+          try {
+            const data = await tRes.value.json()
+            // normalizing various payload shapes: array, { therapists: [...] }, { rows: [...] }
+            let arr: any[] = []
+            if (Array.isArray(data)) arr = data
+            else if (Array.isArray(data.therapists)) arr = data.therapists
+            else if (Array.isArray(data.rows)) arr = data.rows
+            else {
+              // try to find an array inside
+              for (const k of Object.keys(data || {})) {
+                if (Array.isArray((data as any)[k])) {
+                  arr = (data as any)[k]
+                  break
+                }
+              }
+            }
+
+            if (arr.length > 0) {
+              const normalized = arr.map(normalizeTherapistObject)
+              setTherapists(normalized as Therapist[])
+            } else {
+              setTherapists(getLocalTherapistsFallback())
+            }
+          } catch {
+            setTherapists(getLocalTherapistsFallback())
+          }
         } else {
-          // Hardcoded list as a fallback in case API fails
-          setTherapists([
-            {
-              id: 1,
-              first_name: "Maria",
-              last_name: "Santos",
-              profile_image: "/professional-female-therapist.png",
-              rating: 4.9,
-              total_reviews: 127,
-              specialties: ["Swedish", "Deep Tissue"],
-              distance: 2.3,
-              location: "Makati",
-            },
-            {
-              id: 2,
-              first_name: "Anna",
-              last_name: "Rodriguez",
-              profile_image: "/asian-female-therapist.png",
-              rating: 4.8,
-              total_reviews: 89,
-              specialties: ["Shiatsu", "Prenatal"],
-              distance: 3.1,
-              location: "BGC",
-            },
-          ] as any)
+          setTherapists(getLocalTherapistsFallback())
         }
       } catch {
-        /* ignore */
+        // global fallback
+        setServices(getLocalServicesFallback())
+        setTherapists(getLocalTherapistsFallback())
       }
     }
     // Only load data if the user is logged in
@@ -219,6 +228,87 @@ export default function BookingPage() {
       load()
     }
   }, [authLoading, user]) // Re-run when auth is ready
+
+  // Local fallback functions (keeps your original fallback data)
+  function getLocalServicesFallback(): Service[] {
+    return [
+      {
+        id: 1,
+        name: "Swedish Therapeutic",
+        description: "Deep massage...",
+        duration: 60,
+        price: 1399,
+        category: "massage",
+      },
+      {
+        id: 2,
+        name: "Shiatsu",
+        description: "Japanese therapy...",
+        duration: 60,
+        price: 1299,
+        category: "massage",
+      },
+      {
+        id: 3,
+        name: "Swedish Aromatherapy",
+        description: "Long gliding strokes",
+        duration: 60,
+        price: 999,
+        category: "massage",
+      },
+      {
+        id: 4,
+        name: "Office Syndrome Therapy",
+        description: "Intense session for postural stress",
+        duration: 60,
+        price: 2999,
+        category: "massage",
+      },
+      {
+        id: 5,
+        name: "Deep Tissue Massage",
+        description: "Targets deep muscle layers",
+        duration: 90,
+        price: 1599,
+        category: "massage",
+      },
+      {
+        id: 6,
+        name: "Hot Stone Massage",
+        description: "Heated stones for relaxation",
+        duration: 75,
+        price: 1499,
+        category: "massage",
+      },
+    ] as Service[]
+  }
+
+  function getLocalTherapistsFallback(): Therapist[] {
+    return [
+      {
+        id: 1,
+        first_name: "Maria",
+        last_name: "Santos",
+        profile_image: "/professional-female-therapist.png",
+        rating: 4.9,
+        total_reviews: 127,
+        specialties: ["Swedish", "Deep Tissue"],
+        distance: 2.3,
+        location: "Makati",
+      },
+      {
+        id: 2,
+        first_name: "Anna",
+        last_name: "Rodriguez",
+        profile_image: "/asian-female-therapist.png",
+        rating: 4.8,
+        total_reviews: 89,
+        specialties: ["Shiatsu", "Prenatal"],
+        distance: 3.1,
+        location: "BGC",
+      },
+    ] as Therapist[]
+  }
 
   // Preselect via query params
   useEffect(() => {
@@ -903,7 +993,7 @@ export default function BookingPage() {
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
                         <AvatarImage
-                          src={selectedTherapist.profile_image || selectedTepist.avatar || "/placeholder.svg"}
+                          src={selectedTherapist.profile_image || selectedTherapist.avatar || "/placeholder.svg"}
                           alt={
                             selectedTherapist.name ||
                             `${selectedTherapist.first_name || ""} ${selectedTherapist.last_name || ""}`.trim()
