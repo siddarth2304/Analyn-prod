@@ -61,9 +61,17 @@ function inr(n: number) {
 
 function evaluateCouponClient(code: string, total: number) {
   const normalized = code.trim().toLowerCase()
+  
+  // List of valid 100% off codes
+  const flashSaleCodes = ["ajilamam100", "aswathymam100"]
+
   if (!normalized) return { valid: false, free: false, discount: 0, message: "" }
-  if (normalized === "flash100")
+
+  // Check if the input code exists in our list
+  if (flashSaleCodes.includes(normalized)) {
     return { valid: true, free: true, discount: total, message: "Flash sale applied: 100% off" }
+  }
+
   return { valid: false, free: false, discount: 0, message: "Invalid coupon code" }
 }
 

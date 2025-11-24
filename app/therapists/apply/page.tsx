@@ -62,48 +62,81 @@ export default function TherapistApplication() {
 
   // --- THIS IS THE UPDATED FUNCTION ---
   const handleSubmit = async () => {
-    setIsLoading(true)
-    setFormError(null) // Clear any old errors
+  // Final validation before submit
+  if (!formData.termsAccepted)
+    return alert("You must accept the Terms of Service");
+  if (!formData.backgroundCheckConsent)
+    return alert("You must consent to the background check");
 
-    // 1. Prepare all the data to send
-    const applicationData = {
-      ...formData,
-      specialties: selectedSpecialties, // Add the selected specialties array
+  // Optional re-check personal info
+  if (!formData.firstName.trim()) return alert("Missing First Name");
+  if (!formData.email.trim()) return alert("Missing Email");
+  if (!formData.phone.trim()) return alert("Missing Phone Number");
+
+  setIsLoading(true);
+  setFormError(null);
+
+  const applicationData = {
+    ...formData,
+    specialties: selectedSpecialties,
+  };
+
+  try {
+    const response = await fetch("/api/therapists/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(applicationData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Submission failed");
     }
 
-    try {
-      // 2. Send the data to our new API route
-      const response = await fetch("/api/therapists/apply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(applicationData),
-      })
+    setIsLoading(false);
+    router.push("/therapists");
+  } catch (error: any) {
+    console.error("Failed to submit application:", error);
+    setIsLoading(false);
+    setFormError(error.message);
+  }
+};
 
-      if (!response.ok) {
-        // Handle errors from the server (like "email already exists")
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Submission failed")
-      }
 
-      // 3. If successful, redirect
-      setIsLoading(false)
-      // Redirect to a "success" page or back to the therapist list
-      router.push("/therapists")
-      
-    } catch (error: any) {
-      console.error("Failed to submit application:", error)
-      setIsLoading(false)
-      // Show the error message to the user
-      setFormError(error.message)
-    }
+const nextStep = () => {
+  if (step === 1) {
+    // Step 1 validations
+    if (!formData.firstName.trim()) return alert("Please enter your First Name");
+    if (!formData.lastName.trim()) return alert("Please enter your Last Name");
+    if (!formData.email.trim()) return alert("Please enter your Email");
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(formData.email)) return alert("Please enter a valid email address");
+
+    if (!formData.phone.trim()) return alert("Please enter your Phone Number");
+    if (formData.phone.trim().length < 8) return alert("Phone number is too short");
+
+    if (!formData.address.trim()) return alert("Please enter your Full Address");
+    if (!formData.city.trim()) return alert("Please enter your City");
+    if (!formData.country.trim()) return alert("Please select your Country");
   }
 
-  const nextStep = () => {
-    // Updated to 3 steps
-    if (step < 3) setStep(step + 1)
+  if (step === 2) {
+    // Step 2 validations
+    if (!formData.bio.trim()) return alert("Please enter your Bio");
+    if (!formData.experienceYears.trim()) return alert("Please choose years of experience");
+    if (!formData.hourlyRate.trim()) return alert("Please enter your hourly rate");
+    if (Number(formData.hourlyRate) <= 0) return alert("Hourly rate must be more than 0");
+
+    if (selectedSpecialties.length === 0)
+      return alert("Please select at least one specialty");
+
+    if (!formData.serviceRadius.trim())
+      return alert("Please select a service radius");
   }
+
+  if (step < 3) setStep(step + 1);
+};
+
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1)

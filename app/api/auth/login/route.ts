@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getUserByEmail } from "@/lib/database";
+import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +28,22 @@ export async function POST(request: NextRequest) {
       { expiresIn: "7d" }
     );
 
-    const response = NextResponse.json({ message: "Login successful", user }, { status: 200 });
-    response.cookies.set("auth-token", token, {
+    const res = NextResponse.json(
+      { message: "Login successful", user },
+      { status: 200 }
+    );
+
+    const cookieStore = await cookies(); // IMPORTANT FIX
+
+    cookieStore.set("auth-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60,
+      path: "/",
     });
 
-    return response;
+    return res;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

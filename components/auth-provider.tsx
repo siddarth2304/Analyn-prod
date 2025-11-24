@@ -39,28 +39,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
-      // --- THIS IS THE FIX ---
+
       if (user) {
-        // User is logged in, DO NOT stop loading yet.
-        // Wait for the session cookie to be created.
+        // user logged in → create backend session
         await fetchAndSetToken(user);
-        setLoading(false); // NOW we are done loading.
+        setLoading(false);
       } else {
-        // User is logged out, clear the server session and stop loading.
+        // user logged out → clear backend session
         await fetch("/api/auth/session", { method: "DELETE" });
-        setLoading(false); // We are done loading.
+        setLoading(false);
       }
-      // --- END OF FIX ---
     });
 
     return () => unsubscribe();
   }, []);
 
-  // This function tells the server to create the session cookie
+  // Create session cookie on backend
   const fetchAndSetToken = async (firebaseUser: User) => {
     try {
-      const idToken = await firebaseUser.getIdToken();
+      const idToken = await firebaseUser.getIdToken(true); // force refresh
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,25 +69,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // FIXED LOGIN FUNCTION — prevents infinite loading on wrong password
   const login = async (email: string, password: string) => {
     if (!auth) throw new Error("Firebase not initialized");
     setLoading(true);
 
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-    if (!userCredential.user.emailVerified) {
-      await signOut(auth); // This will trigger onAuthStateChanged
-      setLoading(false);
-      throw new Error("Email not verified. Please check your inbox.");
+      // If user did not verify email
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth);
+        throw new Error("Email not verified. Please check your inbox.");
+      }
+
+      // onAuthStateChanged will finish login
+    } catch (err) {
+      setLoading(false); // 🔥 CRITICAL FIX — prevent infinite loading
+      throw err;         // pass error to UI
     }
-    // onAuthStateChanged will handle setting user and calling fetchAndSetToken
   };
 
   const logout = async () => {
     if (!auth) throw new Error("Firebase not initialized");
     setLoading(true);
     await signOut(auth);
-    // onAuthStateChanged will clear the session and set user=null
     router.push("/auth/login");
   };
 
