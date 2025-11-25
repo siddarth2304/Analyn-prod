@@ -1,19 +1,27 @@
-// File: components/auth-provider.tsx
+// components/auth-provider.tsx
 
 "use client";
 
 import { useEffect, useState, createContext, useContext } from "react";
 import {
   onAuthStateChanged,
-  User,
   signInWithEmailAndPassword,
   signOut,
+  User as FirebaseUser,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
+interface AppUser {
+  id?: number | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,9 +35,37 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Fetch user from /api/auth/me
+  const fetchBackendUser = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // Sync Firebase login with backend session
+  const createBackendSession = async (firebaseUser: FirebaseUser) => {
+    try {
+      const idToken = await firebaseUser.getIdToken(true);
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const profile = await fetchBackendUser();
+      setUser(profile);
+    } catch (err) {
+      console.error("Session creation failed", err);
+    }
+  };
 
   useEffect(() => {
     if (!auth) {
@@ -37,16 +73,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-
-      if (user) {
-        // user logged in → create backend session
-        await fetchAndSetToken(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        await createBackendSession(firebaseUser);
         setLoading(false);
       } else {
-        // user logged out → clear backend session
         await fetch("/api/auth/session", { method: "DELETE" });
+        setUser(null);
         setLoading(false);
       }
     });
@@ -54,60 +87,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  // Create session cookie on backend
-  const fetchAndSetToken = async (firebaseUser: User) => {
-    try {
-      const idToken = await firebaseUser.getIdToken(true); // force refresh
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-      if (!res.ok) throw new Error("Failed to create session");
-    } catch (error) {
-      console.error("Failed to fetch/set session cookie:", error);
-    }
-  };
-
-  // FIXED LOGIN FUNCTION — prevents infinite loading on wrong password
+  // Login function
   const login = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase not initialized");
     setLoading(true);
-
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
 
-      // If user did not verify email
-      if (!userCredential.user.emailVerified) {
+      if (!cred.user.emailVerified) {
         await signOut(auth);
-        throw new Error("Email not verified. Please check your inbox.");
+        throw new Error("Email not verified. Please verify first.");
       }
 
-      // onAuthStateChanged will finish login
+      // onAuthStateChanged will handle session + user fetch
     } catch (err) {
-      setLoading(false); // 🔥 CRITICAL FIX — prevent infinite loading
-      throw err;         // pass error to UI
+      setLoading(false);
+      throw err;
     }
   };
 
+  // Logout
   const logout = async () => {
-    if (!auth) throw new Error("Firebase not initialized");
     setLoading(true);
     await signOut(auth);
     router.push("/auth/login");
   };
 
-  const value = { user, loading, login, logout };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50 flex items-center justify-center">
-        <p className="text-stone-700">Loading...</p>
-      </div>
-    );
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center text-stone-600">
+          Loading...
+        </div>
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);
